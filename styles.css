@@ -1,0 +1,37 @@
+body {
+    display: inline-block;
+    text-align: left;
+    font-family: century Gothic;
+}
+
+div.title {
+    text-align: center;
+    font-weight: bold;
+}
+
+.auth {
+    display: flex;
+    justify-content: space-between;
+}
+
+.alignleft {
+    margin-left: 5px;
+}
+
+.alignright {
+    margin-right: 5px;
+}
+
+.language-select {
+    margin: 2px;
+    width: 25%;
+}
+
+.arrow {
+    display: inline-block;
+}
+
+.model-select {
+    margin: 2px;
+    width: 25%;
+}
