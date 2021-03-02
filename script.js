@@ -1,4 +1,5 @@
-const FUTURES_URL = "https://dapi.binance.com/dapi/v1/exchangeInfo";
+const ALL_SYMBOLS_URL = "https://dapi.binance.com/dapi/v1/exchangeInfo";
+const SYMBOL_PRICE_URL = "https://dapi.binance.com/dapi/v1/ticker/price";
 
 window.onload = async function () {
     initFuturesDropDowns();
@@ -35,7 +36,12 @@ function createOption(label, value) {
 }
 
 function requestFuturesSymbols(callback) {
-    fireGetRequestTo(FUTURES_URL, callback);
+    fireGetRequestTo(ALL_SYMBOLS_URL, callback);
+}
+
+function requestSymbolPrice(value, callback) {
+    let url = `${SYMBOL_PRICE_URL}?symbol=${value}`;
+    fireGetRequestTo(url, callback);
 }
 
 async function fireGetRequestTo(url, callback) {
@@ -66,4 +72,8 @@ function sortSelectOptions(selElem) {
         selElem.options[i] = op;
     }
     return;
+}
+
+function getSymbolPrice(selectObject, textBoxId) {
+    requestSymbolPrice(selectObject.value, (response) => document.getElementById(textBoxId).value = response[0].price);
 }

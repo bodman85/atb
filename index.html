@@ -12,7 +12,7 @@
     <div>
         <div>
             Futures contract 1:
-            <select class="futures-select" id="futures-dropdown-1">
+            <select class="futures-select" id="futures-dropdown-1" onchange="getSymbolPrice(this, 'price1')">
                 <option selected disabled hidden>Symbol</option>
             </select>
             <input type="text" id="price1" readonly value="price">
@@ -21,7 +21,7 @@
         <div><p></p></div>
         <div>
             Futures contract 2:
-            <select class="futures-select" id="futures-dropdown-2">
+            <select class="futures-select" id="futures-dropdown-2" onchange="getSymbolPrice(this, 'price2')">
                 <option selected disabled hidden>Symbol</option>
             </select>
             <input type="text" id="price2" readonly value="price">
