@@ -76,4 +76,5 @@ function sortSelectOptions(selElem) {
 
 function getSymbolPrice(selectObject, textBoxId) {
     requestSymbolPrice(selectObject.value, (response) => document.getElementById(textBoxId).value = response[0].price);
+    setTimeout(function () { getSymbolPrice(selectObject, textBoxId) }, 1000);
 }
