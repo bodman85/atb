@@ -2,30 +2,38 @@
 <html>
 <head>
     <title>ATB</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
     <link rel="stylesheet" href="styles.css">
-    <script type="text/javascript" src="script.js"></script>
+    <script src="main.js"></script>
 </head>
 <body>
-    <div class="title">
-        <h2>Arbitrage Trading Bot</h2>
+    <div class="mb-3 d-flex justify-content-center text-secondary">
+        <h2>COIN-M Arbitrage</h2>
     </div>
-    <div>
-        <div>
-            Futures contract 1:
-            <select class="futures-select" id="futures-dropdown-1" onchange="getSymbolPrice(this, 'price1')">
-                <option selected disabled hidden>Symbol</option>
-            </select>
-            <input type="text" id="price1" readonly value="price">
-
+    <div class="container-fluid" id="instrumentGrid">
+        <div class="row font-bold mb-2">
+            <div class="col">
+                Leading Instrument(cheap)
+            </div>
+            <div class="col">
+                Leading Price
+            </div>
+            <div class="col">
+                Led Instrument(expensive)
+            </div>
+            <div class="col">
+                Led Price
+            </div>
+            <div class="col">
+                Delta, %
+            </div>
+            <div class="col">
+                Delta, $
+            </div>
         </div>
-        <div><p></p></div>
-        <div>
-            Futures contract 2:
-            <select class="futures-select" id="futures-dropdown-2" onchange="getSymbolPrice(this, 'price2')">
-                <option selected disabled hidden>Symbol</option>
-            </select>
-            <input type="text" id="price2" readonly value="price">
-        </div>
+    </div>
+    <div class="m-2">
+        <button type="button" class="btn btn-secondary" id="addNewPairButton">Add new pair</button>
     </div>
 </body>
 </html>
