@@ -25,6 +25,8 @@ function addRowFilledWithData() {
     let deltaPcntId = `deltaPcnt${rowNumber}`;
     let deltaUsdId = `deltaUsd${rowNumber}`;
 
+    let removeButtonId = `removeButton${rowNumber}`;
+
     //Create empty row
     row.appendChild(createColumn(leadingInstrumentId, "select"));
     row.appendChild(createColumn(leadingPriceId, "input", "text"));
@@ -32,6 +34,7 @@ function addRowFilledWithData() {
     row.appendChild(createColumn(ledPriceId, "input", "text"));
     row.appendChild(createColumn(deltaPcntId, "input", "text"));
     row.appendChild(createColumn(deltaUsdId, "input", "text"));
+    row.appendChild(createColumn(removeButtonId, "input", "button", "remove"));
 
     document.getElementById("instrumentGrid").appendChild(row);
 
@@ -42,18 +45,31 @@ function addRowFilledWithData() {
     pollPricesAndRecomputeDeltasFor(rowNumber);
 }
 
-function createColumn(id, element, type) {
+function createColumn(id, element, type, value) {
     let div = document.createElement("div");
     div.classList.add("col");
     var control = document.createElement(element);
-    if (type) {
+    control.id = id;
+    if (!type) {
+        control.classList.add("form-select");
+    } else if (type === 'text') {
         control.type = type;
         control.classList.add("form-control");
-    } else {
-        control.classList.add("form-select");
+    } else if (type === 'button') {
+        control.type = type;
+        control.classList.add("btn");
+        control.classList.add("btn-secondary");
+        control.value = value;
+        if (value === 'remove') {
+            control.addEventListener("click", function () { removeRow(control.id) }, false);
+        }
     }
 
-    control.setAttribute("id", id);
+function removeRow(buttonId) {
+    let row = document.getElementById(buttonId).parentNode.parentNode;
+    row.remove();
+}
+  
     div.appendChild(control);
     return div;
 }
