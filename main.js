@@ -68,6 +68,7 @@ function createColumn(id, element, type, value) {
 function removeRow(buttonId) {
     let row = document.getElementById(buttonId).parentNode.parentNode;
     row.remove();
+    rowNumber--;
 }
   
     div.appendChild(control);
