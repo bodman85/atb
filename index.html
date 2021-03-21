@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+    <title>ATB</title>
+    <link rel="stylesheet" type="text/css" href="./bundle.css">
+    <!--<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">-->
+    <script src="./bundle.js"></script>
+</head>
+<body>
+    <div class="mb-3 d-flex justify-content-center text-secondary">
+        <h2>COIN-M Arbitrage</h2>
+    </div>
+    <div class="container-fluid" id="instrumentGrid">
+        <div class="row font-bold mb-2">
+            <div class="col">
+                Leading Instrument(cheap)
+            </div>
+            <div class="col">
+                Leading Price
+            </div>
+            <div class="col">
+                Led Instrument(expensive)
+            </div>
+            <div class="col">
+                Led Price
+            </div>
+            <div class="col">
+                Delta, %
+            </div>
+            <div class="col">
+                Delta, $
+            </div>
+            <div class="col">
+            </div>
+        </div>
+    </div>
+    <div class="m-2">
+        <button type="button" class="btn btn-secondary" id="addNewPairButton">Add new pair</button>
+    </div>
+</body>
+</html>
