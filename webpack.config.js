@@ -1,5 +1,6 @@
 const path = require('path');
 const miniCss = require('mini-css-extract-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
     mode: 'development',
@@ -13,7 +14,9 @@ module.exports = {
     output: {
         path: path.resolve('dist')
     },
-    plugins: [new miniCss()],
+    plugins: [
+        new miniCss(),
+        new HtmlWebpackPlugin({template: './index.html'})],
     module: {
         rules: [
             {
@@ -30,7 +33,8 @@ module.exports = {
                         loader: 'url-loader',
                         options: {
                             limit: '8192',
-                            name: '../dist/webfonts/[name].[ext]'
+                            name: '[name].[ext]',
+                            outputPath: 'webfonts'
                         },
                     },
                 ],
