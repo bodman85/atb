@@ -34,7 +34,7 @@ function addRowFilledWithData() {
     row.appendChild(createColumn(ledPriceId, "input", "text"));
     row.appendChild(createColumn(deltaPcntId, "input", "text"));
     row.appendChild(createColumn(deltaUsdId, "input", "text"));
-    row.appendChild(createColumn(removeButtonId, "input", "button", "remove"));
+    row.appendChild(createColumn(removeButtonId, "button", "button", "remove"));
 
     document.getElementById("instrumentGrid").appendChild(row);
 
@@ -59,8 +59,11 @@ function createColumn(id, element, type, value) {
         control.type = type;
         control.classList.add("btn");
         control.classList.add("btn-secondary");
-        control.value = value;
         if (value === 'remove') {
+            let icon = document.createElement('span')
+            icon.classList.add("fa");
+            icon.classList.add("fa-trash");
+            control.appendChild(icon);
             control.addEventListener("click", function () { removeRow(control.id) }, false);
         }
     }

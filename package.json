@@ -1,0 +1,37 @@
+{
+  "homepage": "https://bodman85.github.io/atb",
+  "name": "atb",
+  "version": "1.0.0",
+  "description": "Arbitrage Trading Bot",
+  "main": "main.js",
+  "scripts": {
+    "build-css": "webpack-cli",
+    "build-js": "browserify main.js | uglifyjs -mc > dist/bundle.js",
+    "watch-js": "watchify main.js -o dist/bundle.js -dv",
+    "build": "npm run build-css && npm run build-js",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
+  },
+  "author": "Bogdan",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.12.13",
+    "@babel/preset-env": "^7.12.13",
+    "babel-loader": "^8.2.2",
+    "browserify": "^17.0.0",
+    "css-loader": "^5.1.3",
+    "file-loader": "^6.2.0",
+    "gh-pages": "^3.1.0",
+    "mini-css-extract-plugin": "^1.3.9",
+    "style-loader": "^2.0.0",
+    "uglify-js": "^3.13.1",
+    "url-loader": "^4.1.1",
+    "webpack": "^5.26.0",
+    "webpack-cli": "^4.5.0"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^5.15.2",
+    "bootstrap": "5.0.0-beta2",
+    "watchify": "^4.0.0"
+  }
+}
