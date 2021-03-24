@@ -6,17 +6,23 @@ module.exports = {
     mode: 'development',
     entry: {
         bundle:
-            ['./node_modules/bootstrap/dist/css/bootstrap.min.css',
-             './node_modules/bootstrap/dist/js/bootstrap.bundle.min.js',
-             './node_modules/@fortawesome/fontawesome-free/css/all.min.css',
-             './styles.css']
+            [
+                './node_modules/bootstrap/dist/css/bootstrap.min.css',
+                './node_modules/bootstrap/dist/js/bootstrap.bundle.min.js',
+                './node_modules/@fortawesome/fontawesome-free/css/all.min.css',
+                './styles.css'
+            ]
     },
     output: {
         path: path.resolve('dist')
     },
     plugins: [
         new miniCss(),
-        new HtmlWebpackPlugin({template: './index.html'})],
+        new HtmlWebpackPlugin(
+            {
+                template: './index.html',
+                favicon: 'images/favicon.ico'
+            })],
     module: {
         rules: [
             {

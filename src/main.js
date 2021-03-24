@@ -1,3 +1,5 @@
+var dataManager = require("./data-manager");
+
 const SERVER_URL = "https://dapi.binance.com/dapi/v1/"
 const ALL_SYMBOLS = "exchangeInfo";
 const SYMBOL_PRICE = "ticker/price";
@@ -8,6 +10,7 @@ let rowNumber = 0;
 window.onload = async function () {
     addRowFilledWithData(rowNumber);
     document.getElementById("addNewPairButton").addEventListener("click", addRowFilledWithData);
+    dataManager.test();
 }
 
 function addRowFilledWithData() {
