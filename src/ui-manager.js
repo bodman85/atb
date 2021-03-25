@@ -1,26 +1,57 @@
-const LEADING_INSTRUMENT_DROPDOWN = 'leadingInstrument';
-const LED_INSTRUMENT_DROPDOWN = 'ledInstrument';
-
-//function fillLeadingInstrumentDropdownWith(rowNumber, data) {
-//    let dropDown = document.getElementById(`LEADING_INSTRUMENT_DROPDOWN${rowNumber}`);
-//    removeAllChildNodes(dropDown);
-//    for (let s of data.symbols) {
-//        dropDown.appendChild(createOption(s.symbol, s.symbol));
-//    }
-//    sortSelectOptions(dropDown);
-//}
-
 function removeRowWithElement(id) {
     let row = document.getElementById(id).parentNode.parentNode;
-    let removedRows = row ? 1 : 0;
     row.remove();
-    return removedRows;
+}
+
+function createColumn(id, element, type, value) {
+    let div = document.createElement("div");
+    div.classList.add("col");
+    var control = document.createElement(element);
+    control.id = id;
+    if (!type) {
+        control.classList.add("form-select");
+        control.addEventListener("change", function () {
+            window.stop();
+        });
+    } else if (type === 'text') {
+        control.type = type;
+        control.classList.add("form-control");
+    } else if (type === 'button') {
+        control.type = type;
+        control.classList.add("btn");
+        control.classList.add("btn-secondary");
+        if (value === 'remove') {
+            let icon = document.createElement('span')
+            icon.classList.add("fa");
+            icon.classList.add("fa-trash");
+            control.appendChild(icon);
+            control.addEventListener("click", removeDataRow);
+        }
+    }
+    div.appendChild(control);
+    return div;
+}
+
+function fillDropDownWithData(id, symbols) {
+    let dropdown = document.getElementById(id);
+    removeAllChildNodes(dropdown);
+    for (let s of symbols) {
+        dropdown.appendChild(createOption(s.symbol, s.symbol));
+    }
+    sortOptions(dropdown);
 }
 
 function removeAllChildNodes(parent) {
     while (parent.firstChild) {
         parent.removeChild(parent.firstChild);
     }
+}
+
+function createOption(label, value) {
+    var option = document.createElement("option");
+    option.setAttribute("value", value);
+    option.innerHTML = label;
+    return option;
 }
 
 function sortOptions(dropdown) {
@@ -39,20 +70,17 @@ function sortOptions(dropdown) {
     return;
 }
 
-function createOption(label, value) {
-    var option = document.createElement("option");
-    option.setAttribute("value", value);
-    option.innerHTML = label;
-    return option;
-}
-
 function clearOptions(element) {
     element.options.length = 0;
 }
 
+function removeAllDataRows() {
+    document.getElementById('removeAllButton').classList.toggle('invisible');
+    document.getElementById("dataGrid").innerHTML = '';
+}
+
 module.exports = {
     removeRowWithElement: removeRowWithElement,
-    removeAllChildNodes: removeAllChildNodes,
-    createOption: createOption,
-    sortOptions: sortOptions
+    fillDropDownWithData: fillDropDownWithData,
+    removeAllDataRows: removeAllDataRows
 }

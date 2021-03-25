@@ -6,8 +6,8 @@ let rowNumber = 0;
 window.onload = async function () {
     addRowFilledWithData(rowNumber);
     document.getElementById("addNewPairButton").addEventListener("click", addRowFilledWithData);
-    document.getElementById("removeAllButton").addEventListener("click", removeAllDataRows);
-    setInterval(pollPricesAndRecomputeDeltas, 500);
+    document.getElementById("removeAllButton").addEventListener("click", function () { rowNumber = 0; uiManager.removeAllDataRows(); });
+    setInterval(pollPricesAndRecomputeDeltas, 1000);
 }
 
 async function addRowFilledWithData() {
@@ -36,16 +36,10 @@ async function addRowFilledWithData() {
     row.appendChild(createColumn(removeButtonId, "button", "button", "remove"));
     document.getElementById("dataGrid").appendChild(row);
 
-    fillDropDownWithData(leadingInstrumentId, await dataManager.getAllSymbols());
-    fillDropDownWithData(ledInstrumentId, await dataManager.getAllSymbols());
+    uiManager.fillDropDownWithData(leadingInstrumentId, await dataManager.getAllSymbols());
+    uiManager.fillDropDownWithData(ledInstrumentId, await dataManager.getAllSymbols());
 
     document.getElementById('removeAllButton').classList.remove('invisible');
-}
-
-function removeAllDataRows() {
-    rowNumber = 0;
-    document.getElementById('removeAllButton').classList.toggle('invisible');
-    document.getElementById("dataGrid").innerHTML = '';
 }
 
 function createColumn(id, element, type, value) {
@@ -55,6 +49,9 @@ function createColumn(id, element, type, value) {
     control.id = id;
     if (!type) {
         control.classList.add("form-select");
+        control.addEventListener("change", function () {
+            window.stop();
+        });
     } else if (type === 'text') {
         control.type = type;
         control.classList.add("form-control");
@@ -67,22 +64,31 @@ function createColumn(id, element, type, value) {
             icon.classList.add("fa");
             icon.classList.add("fa-trash");
             control.appendChild(icon);
-            control.addEventListener("click", function () {
-                rowNumber = rowNumber - uiManager.removeRowWithElement(control.id);
-            }, false);
+            control.addEventListener("click", removeDataRow);
         }
     }
     div.appendChild(control);
     return div;
 }
 
-function fillDropDownWithData(id, symbols) {
-    let dropdown = document.getElementById(id);
-    uiManager.removeAllChildNodes(dropdown);
-    for (let s of symbols) {
-        dropdown.appendChild(uiManager.createOption(s.symbol, s.symbol));
+function removeDataRow() {
+    uiManager.removeRowWithElement(this.id);
+    let removedRow = parseInt(this.id.match(/\d+$/)[0], 10);
+    recalculateControlIds(removedRow + 1, rowNumber);
+    --rowNumber;
+}
+
+function recalculateControlIds(start, total) {
+    console.log('start: ' + start + " total: " + total);
+    for (let rn = start; rn <= total; rn++) {
+        document.getElementById(`leadingInstrument${rn}`).id = `leadingInstrument${rn - 1}`;
+        document.getElementById(`ledInstrument${rn}`).id = `ledInstrument${rn - 1}`;
+        document.getElementById(`leadingPrice${rn}`).id = `leadingPrice${rn - 1}`;
+        document.getElementById(`ledPrice${rn}`).id = `ledPrice${rn - 1}`;
+        document.getElementById(`deltaPcnt${rn}`).id = `deltaPcnt${rn - 1}`;
+        document.getElementById(`deltaUsd${rn}`).id = `deltaUsd${rn - 1}`;
+        document.getElementById(`removeButton${rn}`).id = `removeButton${rn - 1}`;
     }
-    uiManager.sortOptions(dropdown);
 }
 
 function pollPricesAndRecomputeDeltas() {
