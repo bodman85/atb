@@ -1,35 +1,11 @@
+function removeAllDataRows(buttonId, dataGridId) {
+    document.getElementById(buttonId).classList.toggle('invisible');
+    document.getElementById(dataGridId).innerHTML = '';
+}
+
 function removeRowWithElement(id) {
     let row = document.getElementById(id).parentNode.parentNode;
     row.remove();
-}
-
-function createColumn(id, element, type, value) {
-    let div = document.createElement("div");
-    div.classList.add("col");
-    var control = document.createElement(element);
-    control.id = id;
-    if (!type) {
-        control.classList.add("form-select");
-        control.addEventListener("change", function () {
-            window.stop();
-        });
-    } else if (type === 'text') {
-        control.type = type;
-        control.classList.add("form-control");
-    } else if (type === 'button') {
-        control.type = type;
-        control.classList.add("btn");
-        control.classList.add("btn-secondary");
-        if (value === 'remove') {
-            let icon = document.createElement('span')
-            icon.classList.add("fa");
-            icon.classList.add("fa-trash");
-            control.appendChild(icon);
-            control.addEventListener("click", removeDataRow);
-        }
-    }
-    div.appendChild(control);
-    return div;
 }
 
 function fillDropDownWithData(id, symbols) {
@@ -72,11 +48,6 @@ function sortOptions(dropdown) {
 
 function clearOptions(element) {
     element.options.length = 0;
-}
-
-function removeAllDataRows() {
-    document.getElementById('removeAllButton').classList.toggle('invisible');
-    document.getElementById("dataGrid").innerHTML = '';
 }
 
 module.exports = {

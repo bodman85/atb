@@ -6,7 +6,9 @@ let rowNumber = 0;
 window.onload = async function () {
     addRowFilledWithData(rowNumber);
     document.getElementById("addNewPairButton").addEventListener("click", addRowFilledWithData);
-    document.getElementById("removeAllButton").addEventListener("click", function () { rowNumber = 0; uiManager.removeAllDataRows(); });
+    document.getElementById("removeAllButton").addEventListener("click", function () {
+        rowNumber = 0; uiManager.removeAllDataRows(this.id, "dataGrid");
+    });
     setInterval(pollPricesAndRecomputeDeltas, 1000);
 }
 
@@ -79,7 +81,6 @@ function removeDataRow() {
 }
 
 function recalculateControlIds(start, total) {
-    console.log('start: ' + start + " total: " + total);
     for (let rn = start; rn <= total; rn++) {
         document.getElementById(`leadingInstrument${rn}`).id = `leadingInstrument${rn - 1}`;
         document.getElementById(`ledInstrument${rn}`).id = `ledInstrument${rn - 1}`;
