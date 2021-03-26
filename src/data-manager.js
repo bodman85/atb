@@ -47,24 +47,9 @@ async function fireGetRequestWithCallback(path, callback) {
     xhttp.send();
 }
 
-async function cache(key, value) {
-    window.localStorage.setItem(key, JSON.stringify(value));
-}
-
-function getCachedArray(key) {
-    let item = window.localStorage.getItem(key);
-    if (item) {
-        return JSON.parse(item);
-    }
-    return [];
-}
-
-
 module.exports = {
     getAllSymbols: getAllSymbols,
-    requestPrice: requestPrice,
-    cache: cache,
-    getCachedArray: getCachedArray
+    requestPrice: requestPrice
 }
 
 

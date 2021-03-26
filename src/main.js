@@ -1,71 +1,36 @@
 var dataManager = require("./data-manager");
 var uiUtils = require("./ui-utils");
+var cacheManager = require("./cache-manager");
 
 let rowNumber;
-let leadingInstruments = [];
-let ledInstruments = [];
 
 window.onload = async function () {
     rowNumber = 0;
     loadState();
-    document.getElementById("addNewPairButton").addEventListener("click", function () { addDataRow(cacheDataRow); });
+    document.getElementById("addNewPairButton").addEventListener("click", function () { addDataRow(cacheManager.cacheDataRow); });
     document.getElementById("removeAllButton").addEventListener("click", removeAllDataRows);
     setInterval(pollPricesAndRecomputeDeltas, 1000);
 }
 
 async function loadState() {
-    leadingInstruments = dataManager.getCachedArray("leadingInstruments");
-    ledInstruments = dataManager.getCachedArray("ledInstruments");
-    if (leadingInstruments.length === ledInstruments.length) {
-        for (let rn = 0; rn < leadingInstruments.length; rn++) {
-            await addDataRow();
-            document.getElementById(`leadingInstrument${rn + 1}`).value = leadingInstruments[rn];
-            document.getElementById(`ledInstrument${rn + 1}`).value = ledInstruments[rn];
-        }
+    for (let rn = 0; rn < cacheManager.getCachedRowsCount(); rn++) {
+        await addDataRow(cacheManager.selectCachedValues);
     }
 }
 
 async function addDataRow(callback) {
     rowNumber++;
     createRow();
-    await initRow(rowNumber, callback);
+    await initRow(callback);
     document.getElementById('removeAllButton').classList.remove('invisible');
 }
 
-async function initRow(rn, callback) {
-    uiUtils.fillDropdownWithData(`leadingInstrument${rn}`, await dataManager.getAllSymbols());
-    uiUtils.fillDropdownWithData(`ledInstrument${rn}`, await dataManager.getAllSymbols());
-    console.log('Dropdowns initialised');
-    if (callback) {
+async function initRow(callback) {
+    uiUtils.fillDropdownWithData(`leadingInstrument${rowNumber}`, await dataManager.getAllSymbols());
+    uiUtils.fillDropdownWithData(`ledInstrument${rowNumber}`, await dataManager.getAllSymbols());
+    if (callback && typeof callback === "function") {
         callback(rowNumber);
     }
-}
-function cacheDataRow(rn) {
-    leadingInstruments.push(document.getElementById(`leadingInstrument${rn}`).value);
-    ledInstruments.push(document.getElementById(`ledInstrument${rn}`).value);
-    dataManager.cache("leadingInstruments", leadingInstruments);
-    dataManager.cache("ledInstruments", ledInstruments);
-}
-
-function replaceCachedRow(rn) {
-    leadingInstruments[rn - 1] = document.getElementById(`leadingInstrument${rn}`).value;
-    ledInstruments[rn - 1] = document.getElementById(`ledInstrument${rn}`).value;
-    dataManager.cache("leadingInstruments", leadingInstruments);
-    dataManager.cache("ledInstruments", ledInstruments);
-}
-
-function removeCachedRow(rn) {
-    leadingInstruments.splice(rn - 1, 1);
-    ledInstruments.splice(rn - 1, 1);
-    dataManager.cache("leadingInstruments", leadingInstruments);
-    dataManager.cache("ledInstruments", ledInstruments);
-}
-
-function removeAllCachedRows() {
-    leadingInstruments = [];
-    ledInstruments = [];
-    dataManager.cache("leadingInstruments", leadingInstruments);
-    dataManager.cache("ledInstruments", ledInstruments);
 }
 
 function createRow() {
@@ -110,14 +75,14 @@ function createColumn(id, element, type, value) {
 }
 
 function onChange() {
-    replaceCachedRow(getRowNumberFrom(this.id));
+    cacheManager.replaceCachedRow(getRowNumberFrom(this.id));
     window.stop();
 }
 
 function removeDataRow() {
     uiUtils.removeRowWithElement(this.id);
     let removedRowNumber = getRowNumberFrom(this.id);
-    removeCachedRow(removedRowNumber);
+    cacheManager.removeCachedRow(removedRowNumber);
     recalculateControlIds(removedRowNumber + 1, rowNumber);
     --rowNumber;
 }
@@ -128,7 +93,7 @@ function getRowNumberFrom(id) {
 
 function removeAllDataRows() {
     rowNumber = 0;
-    removeAllCachedRows();
+    cacheManager.removeAllCachedRows();
     uiUtils.clearDataGrid(this.id, "dataGrid");
 }
 
