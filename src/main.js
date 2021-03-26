@@ -1,47 +1,85 @@
 var dataManager = require("./data-manager");
-var uiManager = require("./ui-manager");
+var uiUtils = require("./ui-utils");
 
-let rowNumber = 0;
+let rowNumber;
+let leadingInstruments = [];
+let ledInstruments = [];
 
 window.onload = async function () {
-    addRowFilledWithData(rowNumber);
-    document.getElementById("addNewPairButton").addEventListener("click", addRowFilledWithData);
-    document.getElementById("removeAllButton").addEventListener("click", function () {
-        rowNumber = 0; uiManager.removeAllDataRows(this.id, "dataGrid");
-    });
+    rowNumber = 0;
+    loadState();
+    document.getElementById("addNewPairButton").addEventListener("click", function () { addDataRow(cacheDataRow); });
+    document.getElementById("removeAllButton").addEventListener("click", removeAllDataRows);
     setInterval(pollPricesAndRecomputeDeltas, 1000);
 }
 
-async function addRowFilledWithData() {
+async function loadState() {
+    leadingInstruments = dataManager.getCachedArray("leadingInstruments");
+    ledInstruments = dataManager.getCachedArray("ledInstruments");
+    if (leadingInstruments.length === ledInstruments.length) {
+        for (let rn = 0; rn < leadingInstruments.length; rn++) {
+            await addDataRow();
+            document.getElementById(`leadingInstrument${rn + 1}`).value = leadingInstruments[rn];
+            document.getElementById(`ledInstrument${rn + 1}`).value = ledInstruments[rn];
+        }
+    }
+}
+
+async function addDataRow(callback) {
     rowNumber++;
+    createRow();
+    await initRow(rowNumber, callback);
+    document.getElementById('removeAllButton').classList.remove('invisible');
+}
+
+async function initRow(rn, callback) {
+    uiUtils.fillDropdownWithData(`leadingInstrument${rn}`, await dataManager.getAllSymbols());
+    uiUtils.fillDropdownWithData(`ledInstrument${rn}`, await dataManager.getAllSymbols());
+    console.log('Dropdowns initialised');
+    if (callback) {
+        callback(rowNumber);
+    }
+}
+function cacheDataRow(rn) {
+    leadingInstruments.push(document.getElementById(`leadingInstrument${rn}`).value);
+    ledInstruments.push(document.getElementById(`ledInstrument${rn}`).value);
+    dataManager.cache("leadingInstruments", leadingInstruments);
+    dataManager.cache("ledInstruments", ledInstruments);
+}
+
+function replaceCachedRow(rn) {
+    leadingInstruments[rn - 1] = document.getElementById(`leadingInstrument${rn}`).value;
+    ledInstruments[rn - 1] = document.getElementById(`ledInstrument${rn}`).value;
+    dataManager.cache("leadingInstruments", leadingInstruments);
+    dataManager.cache("ledInstruments", ledInstruments);
+}
+
+function removeCachedRow(rn) {
+    leadingInstruments.splice(rn - 1, 1);
+    ledInstruments.splice(rn - 1, 1);
+    dataManager.cache("leadingInstruments", leadingInstruments);
+    dataManager.cache("ledInstruments", ledInstruments);
+}
+
+function removeAllCachedRows() {
+    leadingInstruments = [];
+    ledInstruments = [];
+    dataManager.cache("leadingInstruments", leadingInstruments);
+    dataManager.cache("ledInstruments", ledInstruments);
+}
+
+function createRow() {
     let row = document.createElement("div");
     row.classList.add('row');
     row.classList.add('mb-1');
-
-    let leadingInstrumentId = `leadingInstrument${rowNumber}`;
-    let ledInstrumentId = `ledInstrument${rowNumber}`;
-
-    let leadingPriceId = `leadingPrice${rowNumber}`;
-    let ledPriceId = `ledPrice${rowNumber}`;
-
-    let deltaPcntId = `deltaPcnt${rowNumber}`;
-    let deltaUsdId = `deltaUsd${rowNumber}`;
-
-    let removeButtonId = `removeButton${rowNumber}`;
-
-    row.appendChild(createColumn(leadingInstrumentId, "select"));
-    row.appendChild(createColumn(leadingPriceId, "input", "text"));
-    row.appendChild(createColumn(ledInstrumentId, "select"));
-    row.appendChild(createColumn(ledPriceId, "input", "text"));
-    row.appendChild(createColumn(deltaPcntId, "input", "text"));
-    row.appendChild(createColumn(deltaUsdId, "input", "text"));
-    row.appendChild(createColumn(removeButtonId, "button", "button", "remove"));
+    row.appendChild(createColumn(`leadingInstrument${rowNumber}`, "select"));
+    row.appendChild(createColumn(`leadingPrice${rowNumber}`, "input", "text"));
+    row.appendChild(createColumn(`ledInstrument${rowNumber}`, "select"));
+    row.appendChild(createColumn(`ledPrice${rowNumber}`, "input", "text"));
+    row.appendChild(createColumn(`deltaPcnt${rowNumber}`, "input", "text"));
+    row.appendChild(createColumn(`deltaUsd${rowNumber}`, "input", "text"));
+    row.appendChild(createColumn(`removeButton${rowNumber}`, "button", "button", "remove"));
     document.getElementById("dataGrid").appendChild(row);
-
-    uiManager.fillDropDownWithData(leadingInstrumentId, await dataManager.getAllSymbols());
-    uiManager.fillDropDownWithData(ledInstrumentId, await dataManager.getAllSymbols());
-
-    document.getElementById('removeAllButton').classList.remove('invisible');
 }
 
 function createColumn(id, element, type, value) {
@@ -51,9 +89,7 @@ function createColumn(id, element, type, value) {
     control.id = id;
     if (!type) {
         control.classList.add("form-select");
-        control.addEventListener("change", function () {
-            window.stop();
-        });
+        control.addEventListener("change", onChange);
     } else if (type === 'text') {
         control.type = type;
         control.classList.add("form-control");
@@ -73,11 +109,27 @@ function createColumn(id, element, type, value) {
     return div;
 }
 
+function onChange() {
+    replaceCachedRow(getRowNumberFrom(this.id));
+    window.stop();
+}
+
 function removeDataRow() {
-    uiManager.removeRowWithElement(this.id);
-    let removedRow = parseInt(this.id.match(/\d+$/)[0], 10);
-    recalculateControlIds(removedRow + 1, rowNumber);
+    uiUtils.removeRowWithElement(this.id);
+    let removedRowNumber = getRowNumberFrom(this.id);
+    removeCachedRow(removedRowNumber);
+    recalculateControlIds(removedRowNumber + 1, rowNumber);
     --rowNumber;
+}
+
+function getRowNumberFrom(id) {
+    return parseInt(id.match(/\d+$/)[0], 10);
+}
+
+function removeAllDataRows() {
+    rowNumber = 0;
+    removeAllCachedRows();
+    uiUtils.clearDataGrid(this.id, "dataGrid");
 }
 
 function recalculateControlIds(start, total) {

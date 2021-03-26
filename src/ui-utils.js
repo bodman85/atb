@@ -1,4 +1,4 @@
-function removeAllDataRows(buttonId, dataGridId) {
+function clearDataGrid(buttonId, dataGridId) {
     document.getElementById(buttonId).classList.toggle('invisible');
     document.getElementById(dataGridId).innerHTML = '';
 }
@@ -8,7 +8,7 @@ function removeRowWithElement(id) {
     row.remove();
 }
 
-function fillDropDownWithData(id, symbols) {
+function fillDropdownWithData(id, symbols) {
     let dropdown = document.getElementById(id);
     removeAllChildNodes(dropdown);
     for (let s of symbols) {
@@ -52,6 +52,6 @@ function clearOptions(element) {
 
 module.exports = {
     removeRowWithElement: removeRowWithElement,
-    fillDropDownWithData: fillDropDownWithData,
-    removeAllDataRows: removeAllDataRows
+    fillDropdownWithData: fillDropdownWithData,
+    clearDataGrid: clearDataGrid
 }
