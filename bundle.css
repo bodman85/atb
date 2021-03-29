@@ -17,3 +17,10 @@ body {
     font-weight: bold;
 }
 
+#dataGrid *:hover div > input,
+#dataGrid *:hover div > select,
+#dataGrid *:hover div:not(:nth-last-child(-n+1)) {
+    background-color: #CFF5FF;
+    cursor: pointer;
+}
+
