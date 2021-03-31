@@ -29,6 +29,7 @@ module.exports = {
         new HtmlWebpackPlugin(
             {
                 template: './best_prices.html',
+                favicon: 'images/favicon.ico',
                 filename: 'best_prices.html',
                 chunks: ['best_prices']
             })
