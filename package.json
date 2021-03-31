@@ -3,11 +3,10 @@
   "name": "atb",
   "version": "1.0.0",
   "description": "Arbitrage Trading Bot",
-  "main": "main.js",
   "scripts": {
     "build-css": "webpack-cli",
     "build-js": "browserify src/main.js | uglifyjs -mc > dist/bundle.js",
-    "watch-js": "watchify src/main.js -o dist/bundle.js -dv",
+    "watch-js": "start watchify src/main.js -o dist/bundle.js -dv && start watchify src/best_prices.js -o dist/best_prices.js -dv",
     "clean": "del-cli dist",
     "build": "npm run clean && npm run build-css && npm run build-js",
     "predeploy": "npm run build",

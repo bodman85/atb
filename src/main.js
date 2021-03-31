@@ -43,6 +43,7 @@ function createRow() {
     row.appendChild(createColumn(`ledPrice${rowNumber}`, "input", "text"));
     row.appendChild(createColumn(`deltaPcnt${rowNumber}`, "input", "text"));
     row.appendChild(createColumn(`deltaUsd${rowNumber}`, "input", "text"));
+    row.appendChild(createColumn(`arrowButton${rowNumber}`, "button", "button", "arrow"));
     row.appendChild(createColumn(`removeButton${rowNumber}`, "button", "button", "remove"));
     document.getElementById("dataGrid").appendChild(row);
 }
@@ -62,21 +63,37 @@ function createColumn(id, element, type, value) {
         control.type = type;
         control.classList.add("btn");
         control.classList.add("btn-secondary");
-        if (value === 'remove') {
-            let icon = document.createElement('span')
-            icon.classList.add("fa");
-            icon.classList.add("fa-trash");
-            control.appendChild(icon);
-            control.addEventListener("click", removeDataRow);
+        switch (value) {
+            case "arrow":
+                div.classList.add("col-1");
+                control.appendChild(createFaIcon("fa-arrow-right"));
+                control.addEventListener("click", openBestPrices);
+                break;
+            case "remove":
+                div.classList.add("col-1");
+                control.appendChild(createFaIcon("fa-trash"));
+                control.addEventListener("click", removeDataRow);
+                break;
         }
     }
     div.appendChild(control);
     return div;
 }
 
+function createFaIcon(name) {
+    let icon = document.createElement('span')
+    icon.classList.add("fa");
+    icon.classList.add(name);
+    return icon;
+}
+
 function onChange() {
     cacheManager.replaceCachedRow(getRowNumberFrom(this.id));
     window.stop();
+}
+
+function openBestPrices() {
+    window.location.href = 'best_prices.html?pussy=cat';
 }
 
 function removeDataRow() {
@@ -106,6 +123,7 @@ function recalculateControlIds(start, total) {
         document.getElementById(`deltaPcnt${rn}`).id = `deltaPcnt${rn - 1}`;
         document.getElementById(`deltaUsd${rn}`).id = `deltaUsd${rn - 1}`;
         document.getElementById(`removeButton${rn}`).id = `removeButton${rn - 1}`;
+        document.getElementById(`arrowButton${rn}`).id = `arrowButton${rn - 1}`;
     }
 }
 
@@ -119,7 +137,7 @@ function pollPricesAndRecomputeDeltas() {
                 let deltaUsdTextBox = document.getElementById(`deltaUsd${rn}`);
                 if (response[0] && leadingInstrumentPriceTextBox) {
                     leadingInstrumentPriceTextBox.value = response[0].price;
-                    deltaUsdTextBox.value = (parseFloat(ledInstrumentPriceTextBox.value) - parseFloat(leadingInstrumentPriceTextBox.value));
+                    deltaUsdTextBox.value = (parseFloat(ledInstrumentPriceTextBox.value - leadingInstrumentPriceTextBox.value).toFixed(4));
                 }
             });
         }
@@ -131,7 +149,7 @@ function pollPricesAndRecomputeDeltas() {
                 let deltaPcntTextBox = document.getElementById(`deltaPcnt${rn}`);
                 if (response[0] && leadingInstrumentPriceTextBox && ledInstrumentPriceTextBox) {
                     ledInstrumentPriceTextBox.value = response[0].price;
-                    deltaPcntTextBox.value = (ledInstrumentPriceTextBox.value / leadingInstrumentPriceTextBox.value - 1) * 100;
+                    deltaPcntTextBox.value = parseFloat(((ledInstrumentPriceTextBox.value / leadingInstrumentPriceTextBox.value - 1) * 100).toFixed(4));
                 }
             });
         }

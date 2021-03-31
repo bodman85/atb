@@ -5,6 +5,8 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = {
     mode: 'development',
     entry: {
+        main: './src/main.js',
+        best_prices: './src/best_prices.js',
         bundle:
             [
                 './node_modules/bootstrap/dist/css/bootstrap.min.css',
@@ -14,6 +16,7 @@ module.exports = {
             ]
     },
     output: {
+        filename: '[name].js',
         path: path.resolve('dist')
     },
     plugins: [
@@ -22,7 +25,14 @@ module.exports = {
             {
                 template: './index.html',
                 favicon: 'images/favicon.ico'
-            })],
+            }),
+        new HtmlWebpackPlugin(
+            {
+                template: './best_prices.html',
+                filename: 'best_prices.html',
+                chunks: ['best_prices']
+            })
+    ],
     module: {
         rules: [
             {
