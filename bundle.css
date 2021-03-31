@@ -24,3 +24,7 @@ body {
     cursor: pointer;
 }
 
+.col-1 {
+    width: 3%;
+    padding-left: 0;
+}
