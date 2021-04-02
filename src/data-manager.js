@@ -2,6 +2,7 @@ const SERVER_URL = "https://dapi.binance.com/dapi/v1/"
 
 const ALL_SYMBOLS = "exchangeInfo";
 const SYMBOL_PRICE = "ticker/price";
+const BEST_PRICES = "ticker/bookTicker";
 
 let cachedSymbols = [];
 
@@ -34,6 +35,11 @@ function requestPrice(symbol, callback) {
     fireGetRequestWithCallback(path, callback);
 }
 
+function requestBestPrices(symbol, callback) {
+    let path = `${BEST_PRICES}?symbol=${symbol}`;
+    fireGetRequestWithCallback(path, callback);
+}
+
 async function fireGetRequestWithCallback(path, callback) {
     let url = SERVER_URL + path;
     let xhttp = new XMLHttpRequest();
@@ -49,7 +55,8 @@ async function fireGetRequestWithCallback(path, callback) {
 
 module.exports = {
     getAllSymbols: getAllSymbols,
-    requestPrice: requestPrice
+    requestPrice: requestPrice,
+    requestBestPrices: requestBestPrices
 }
 
 

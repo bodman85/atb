@@ -67,7 +67,7 @@ function createColumn(id, element, type, value) {
             case "arrow":
                 div.classList.add("col-1");
                 control.appendChild(createFaIcon("fa-arrow-right"));
-                control.addEventListener("click", openBestPrices);
+                control.addEventListener("click", showBestPrices);
                 break;
             case "remove":
                 div.classList.add("col-1");
@@ -92,8 +92,11 @@ function onChange() {
     window.stop();
 }
 
-function openBestPrices() {
-    window.location.href = 'best_prices.html?pussy=cat';
+function showBestPrices() {
+    let rn = getRowNumberFrom(this.id);
+    let leadingSymbol = document.getElementById(`leadingInstrument${rn}`).value;
+    let ledSymbol = document.getElementById(`ledInstrument${rn}`).value;
+    window.location.href = `best_prices.html?leadingInstrument=${leadingSymbol}&ledInstrument=${ledSymbol}`;
 }
 
 function removeDataRow() {
