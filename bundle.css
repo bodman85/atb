@@ -28,3 +28,8 @@ body {
     width: 3%;
     padding-left: 0;
 }
+
+.col-2 {
+    width: 6%;
+    padding-left: 0;
+}
