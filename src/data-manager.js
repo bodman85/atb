@@ -35,8 +35,8 @@ function requestPrice(symbol, callback) {
     fireGetRequestWithCallback(path, callback);
 }
 
-function requestBestPrices(symbol, callback) {
-    let path = `${BEST_PRICES}?symbol=${symbol}`;
+function requestBestPrices(callback) {
+    let path = `${BEST_PRICES}`;
     fireGetRequestWithCallback(path, callback);
 }
 

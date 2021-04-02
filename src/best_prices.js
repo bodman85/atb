@@ -16,30 +16,25 @@ window.onload = async function () {
 }
 
 function pollBestPricesAndRecomputeDeltas(leadingInstrumentSymbol, ledInstrumentSymbol) {
+    dataManager.requestBestPrices((response) => {
+        let filteredResponse = response.filter(item => [leadingInstrumentSymbol, ledInstrumentSymbol].includes(item.symbol));
 
-    dataManager.requestBestPrices(leadingInstrumentSymbol, (response) => {
-        let leadingPrice1 = document.getElementById(`bpLeadingPrice1`);
-        let ledPrice1 = document.getElementById(`bpLedPrice1`);
-        let deltaPcnt1 = document.getElementById(`bpDeltaPcnt1`);
-        let deltaUsd1 = document.getElementById(`bpDeltaUsd1`);
-        if (response[0]) {
-            leadingPrice1.value = response[0].bidPrice;
-            ledPrice1.value = response[0].askPrice;
-            deltaPcnt1.value = parseFloat(((ledPrice1.value / leadingPrice1.value - 1) * 100).toFixed(4));
-            deltaUsd1.value = (parseFloat(ledPrice1.value - leadingPrice1.value).toFixed(4));
-        }
-    });
+        let leadingBidPrice = filteredResponse.filter(item => item.symbol === leadingInstrumentSymbol).map(obj => obj.bidPrice);
+        let leadingOfferPrice = filteredResponse.filter(item => item.symbol === leadingInstrumentSymbol).map(obj => obj.askPrice);
 
-    dataManager.requestBestPrices(ledInstrumentSymbol, (response) => {
-        let leadingPrice2 = document.getElementById(`bpLeadingPrice2`);
-        let ledPrice2 = document.getElementById(`bpLedPrice2`);
-        let deltaPcnt2 = document.getElementById(`bpDeltaPcnt2`);
-        let deltaUsd2 = document.getElementById(`bpDeltaUsd2`);
-        if (response[0]) {
-            leadingPrice2.value = response[0].askPrice;
-            ledPrice2.value = response[0].bidPrice;
-            deltaPcnt2.value = parseFloat(((leadingPrice2.value / ledPrice2.value - 1) * 100).toFixed(4));
-            deltaUsd2.value = (parseFloat(leadingPrice2.value - ledPrice2.value).toFixed(4));
-        }
+        let ledBidPrice = filteredResponse.filter(item => item.symbol === ledInstrumentSymbol).map(obj => obj.bidPrice);
+        let ledOfferPrice = filteredResponse.filter(item => item.symbol === ledInstrumentSymbol).map(obj => obj.askPrice);
+
+        document.getElementById(`bpLeadingPrice1`).value = leadingBidPrice;
+        document.getElementById(`bpLedPrice1`).value = ledOfferPrice;
+
+        document.getElementById(`bpLeadingPrice2`).value = leadingOfferPrice;
+        document.getElementById(`bpLedPrice2`).value = ledBidPrice;
+
+        document.getElementById(`bpDeltaPcnt1`).value = parseFloat(((ledOfferPrice / leadingBidPrice - 1) * 100).toFixed(4));
+        document.getElementById(`bpDeltaUsd1`).value = (parseFloat(ledOfferPrice - leadingBidPrice).toFixed(4));
+
+        document.getElementById(`bpDeltaPcnt2`).value = parseFloat(((ledBidPrice / leadingOfferPrice - 1) * 100).toFixed(4));
+        document.getElementById(`bpDeltaUsd2`).value = (parseFloat(ledBidPrice - leadingOfferPrice).toFixed(4));
     });
 }

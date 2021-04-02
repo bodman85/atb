@@ -96,7 +96,7 @@ function showBestPrices() {
     let rn = getRowNumberFrom(this.id);
     let leadingSymbol = document.getElementById(`leadingInstrument${rn}`).value;
     let ledSymbol = document.getElementById(`ledInstrument${rn}`).value;
-    window.location.href = `best_prices.html?leadingInstrument=${leadingSymbol}&ledInstrument=${ledSymbol}`;
+    window.open(`best_prices.html?leadingInstrument=${leadingSymbol}&ledInstrument=${ledSymbol}`, '_blank');
 }
 
 function removeDataRow() {
