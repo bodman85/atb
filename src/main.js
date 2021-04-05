@@ -6,16 +6,47 @@ let rowNumber;
 
 window.onload = async function () {
     rowNumber = 0;
-    loadState();
+    reloadState();
+    document.getElementById("loginLink").addEventListener("click", promptCreds);
+    document.getElementById("loginButton").addEventListener("click", login);
+    document.getElementById("logoutLink").addEventListener("click", logout);
     document.getElementById("addNewPairButton").addEventListener("click", function () { addDataRow(cacheManager.cacheDataRow); });
     document.getElementById("removeAllButton").addEventListener("click", removeAllDataRows);
     setInterval(pollPricesAndRecomputeDeltas, 1000);
 }
 
-async function loadState() {
+async function reloadState() {
+    let apiKey = cacheManager.getCached("apiKey");
+    let secretKey = cacheManager.getCached("secretKey");
+    if (apiKey && secretKey) {
+        uiUtils.switchTo("authorized")
+    } else {
+        uiUtils.switchTo("unauthorized");
+    }
     for (let rn = 0; rn < cacheManager.getCachedRowsCount(); rn++) {
         await addDataRow(cacheManager.selectCachedValues);
     }
+}
+
+function promptCreds() {
+    uiUtils.switchTo("prompt_creds");
+}
+
+function login() {
+    let apiKey = document.getElementById("apiKey").value;
+    let secretKey = document.getElementById("secretKey").value;
+    if (apiKey && secretKey) {
+        cacheManager.cache("apiKey", apiKey);
+        cacheManager.cache("secretKey", secretKey);
+        uiUtils.switchTo("authorized");
+    }
+    
+}
+
+function logout() {
+    cacheManager.remove("apiKey");
+    cacheManager.remove("secretKey");
+    uiUtils.switchTo("unauthorized");
 }
 
 async function addDataRow(callback) {

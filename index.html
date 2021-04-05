@@ -9,6 +9,38 @@
     <div class="mb-3 d-flex justify-content-center text-secondary">
         <h2>COIN-M Arbitrage</h2>
     </div>
+    <div class="container-fluid mb-4" id="authGrid">
+        <div class="row" id="unauthorized">
+            <div class="col">
+                <a id="loginLink" href="#">Login</a>
+            </div>
+        </div>
+        <div class="row mb-2" id="prompt_creds">
+            <div class="col-3 mt-2">
+                <label for="apiKey">Api key:</label>
+            </div>
+            <div class="col">
+                <input type="text" class="form-control" id="apiKey">
+            </div>
+            <div class="col-3 mt-2">
+                <label for="secretKey">Secret key:</label>
+            </div>
+            <div class="col">
+                <input type="password" class="form-control" id="secretKey">
+            </div>
+            <div class="col-2">
+                <button type="button" class="btn btn-secondary" id="loginButton">Login</button>
+            </div>
+        </div>
+        <div class="row mb-2" id="authorized">
+            <div class="col fst-italic">
+                Wellcome and good luck!
+            </div>
+            <div class="col-2">
+                <a id="logoutLink" href="#">Logout</a>
+            </div>
+        </div>
+    </div>
     <div class="container-fluid" id="titleGrid">
         <div class="row font-bold mb-2">
             <div class="col">

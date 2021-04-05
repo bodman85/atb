@@ -30,6 +30,19 @@ function cache(key, value) {
     window.localStorage.setItem(key, JSON.stringify(value));
 }
 
+function getCached(key) {
+    let item = window.localStorage.getItem(key);
+    if (item) {
+        return JSON.parse(item);
+    } else {
+        return "";
+    }
+}
+
+function remove(key) {
+    window.localStorage.removeItem(key);
+}
+
 function selectCachedValues(rn) {
     document.getElementById(LEADING_INSTRUMENT + rn).value = getInstruments(LEADING_INSTRUMENTS)[rn - 1];
     document.getElementById(LED_INSTRUMENT + rn).value = getInstruments(LED_INSTRUMENTS)[rn - 1];
@@ -60,8 +73,9 @@ function getCachedRowsCount() {
 }
 
 module.exports = {
-    getInstruments: getInstruments,
     cache: cache,
+    getCached: getCached,
+    remove: remove,
     selectCachedValues: selectCachedValues,
     cacheDataRow: cacheDataRow,
     replaceCachedRow: replaceCachedRow,

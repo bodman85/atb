@@ -1,3 +1,15 @@
+const UI_STATES = ["unauthorized", "prompt_creds", "authorized"];
+
+function switchTo(newState) {
+    for (let state of UI_STATES) {
+        if (state === newState) {
+            document.getElementById(state).style.display = 'flex';
+        } else {
+            document.getElementById(state).style.display = 'none';
+        }
+    }
+}
+
 function clearDataGrid(buttonId, dataGridId) {
     document.getElementById(buttonId).classList.toggle('invisible');
     document.getElementById(dataGridId).innerHTML = '';
@@ -51,6 +63,7 @@ function clearOptions(element) {
 }
 
 module.exports = {
+    switchTo: switchTo,
     removeRowWithElement: removeRowWithElement,
     fillDropdownWithData: fillDropdownWithData,
     clearDataGrid: clearDataGrid
