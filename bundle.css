@@ -33,3 +33,7 @@ body {
     width: 6%;
     padding-left: 0;
 }
+
+.col-3 {
+    width: 9%;
+}
