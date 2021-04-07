@@ -4,6 +4,9 @@ const LED_INSTRUMENT = "ledInstrument";
 const LEADING_INSTRUMENTS = "leadingInstruments";
 const LED_INSTRUMENTS = "ledInstruments";
 
+const API_KEY = "apiKey";
+const SECRET_KEY = "secretKey"
+
 
 function getInstruments(key) {
     let item = window.localStorage.getItem(key);
@@ -43,6 +46,12 @@ function remove(key) {
     window.localStorage.removeItem(key);
 }
 
+function isAuthorized() {
+    let apiKey = getCached(API_KEY);
+    let secretKey = getCached(SECRET_KEY);
+    return (apiKey && secretKey);
+}
+
 function selectCachedValues(rn) {
     document.getElementById(LEADING_INSTRUMENT + rn).value = getInstruments(LEADING_INSTRUMENTS)[rn - 1];
     document.getElementById(LED_INSTRUMENT + rn).value = getInstruments(LED_INSTRUMENTS)[rn - 1];
@@ -76,6 +85,9 @@ module.exports = {
     cache: cache,
     getCached: getCached,
     remove: remove,
+    API_KEY: API_KEY,
+    SECRET_KEY: SECRET_KEY,
+    isAuthorized: isAuthorized,
     selectCachedValues: selectCachedValues,
     cacheDataRow: cacheDataRow,
     replaceCachedRow: replaceCachedRow,

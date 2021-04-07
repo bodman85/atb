@@ -1,4 +1,8 @@
-const UI_STATES = ["unauthorized", "prompt_creds", "authorized"];
+const UNAUTHORIZED = "unauthorized";
+const PROMPT_CREDS = "prompt_creds";
+const AUTHORIZED = "authorized"
+
+const UI_STATES = [UNAUTHORIZED, PROMPT_CREDS, AUTHORIZED];
 
 function switchTo(newState) {
     for (let state of UI_STATES) {
@@ -62,9 +66,24 @@ function clearOptions(element) {
     element.options.length = 0;
 }
 
+function showElement(id) {
+    var el = document.getElementById(id);
+    el.style.display = "flex";
+}
+
+function hideElement(id) {
+    var el = document.getElementById(id);
+    el.style.display = "none";
+}
+
 module.exports = {
+    UNAUTHORIZED: UNAUTHORIZED,
+    PROMPT_CREDS: PROMPT_CREDS,
+    AUTHORIZED: AUTHORIZED,
     switchTo: switchTo,
     removeRowWithElement: removeRowWithElement,
     fillDropdownWithData: fillDropdownWithData,
-    clearDataGrid: clearDataGrid
+    clearDataGrid: clearDataGrid,
+    showElement: showElement,
+    hideElement: hideElement
 }

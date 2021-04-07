@@ -16,12 +16,10 @@ window.onload = async function () {
 }
 
 async function reloadState() {
-    let apiKey = cacheManager.getCached("apiKey");
-    let secretKey = cacheManager.getCached("secretKey");
-    if (apiKey && secretKey) {
-        uiUtils.switchTo("authorized")
+    if (cacheManager.isAuthorized()) {
+        uiUtils.switchTo(uiUtils.AUTHORIZED)
     } else {
-        uiUtils.switchTo("unauthorized");
+        uiUtils.switchTo(uiUtils.UNAUTHORIZED);
     }
     for (let rn = 0; rn < cacheManager.getCachedRowsCount(); rn++) {
         await addDataRow(cacheManager.selectCachedValues);
@@ -29,16 +27,16 @@ async function reloadState() {
 }
 
 function promptCreds() {
-    uiUtils.switchTo("prompt_creds");
+    uiUtils.switchTo(uiUtils.PROMPT_CREDS);
 }
 
 function login() {
     let apiKey = document.getElementById("apiKey").value;
     let secretKey = document.getElementById("secretKey").value;
     if (apiKey && secretKey) {
-        cacheManager.cache("apiKey", apiKey);
-        cacheManager.cache("secretKey", secretKey);
-        uiUtils.switchTo("authorized");
+        cacheManager.cache(cacheManager.API_KEY, apiKey);
+        cacheManager.cache(cacheManager.SECRET_KEY, secretKey);
+        uiUtils.switchTo(uiUtils.AUTHORIZED);
     }
     
 }
@@ -46,7 +44,7 @@ function login() {
 function logout() {
     cacheManager.remove("apiKey");
     cacheManager.remove("secretKey");
-    uiUtils.switchTo("unauthorized");
+    uiUtils.switchTo(uiUtils.UNAUTHORIZED);
 }
 
 async function addDataRow(callback) {

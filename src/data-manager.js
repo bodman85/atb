@@ -1,4 +1,5 @@
-const SERVER_URL = "https://dapi.binance.com/dapi/v1/"
+const SERVER_URL = "https://dapi.binance.com/dapi/v1/"  //Prod env
+//const SERVER_URL = "https://testnet.binancefuture.com/dapi/v1/" //Test env
 
 const ALL_SYMBOLS = "exchangeInfo";
 const SYMBOL_PRICE = "ticker/price";
@@ -17,7 +18,7 @@ async function getAllSymbols() {
 async function fireGetRequestTo(path) {
     let url = SERVER_URL + path;
     let requestHeaders = new Headers();
-    requestHeaders.append('Content-Type', 'application/json');
+    //requestHeaders.append('Content-Type', 'application/json');
     //if (token = await tokenManager.getValidAuthToken()) {
     //    requestHeaders.append('Authorization', `Bearer ${token}`);
     //}

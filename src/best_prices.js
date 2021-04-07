@@ -1,4 +1,6 @@
 var dataManager = require("./data-manager");
+var cacheManager = require("./cache-manager");
+var uiUtils = require("./ui-utils");
 
 window.onload = async function () {
     const urlParams = new URLSearchParams(window.location.search);
@@ -11,6 +13,14 @@ window.onload = async function () {
 
     document.getElementById('bpLedInstrument1').value = ledInstrumentSymbol;
     document.getElementById('bpLedInstrument2').value = ledInstrumentSymbol;
+
+    if (cacheManager.isAuthorized()) {
+        uiUtils.showElement('buySpreadButton');
+        uiUtils.showElement('sellSpreadButton');
+    } else {
+        uiUtils.hideElement('buySpreadButton');
+        uiUtils.hideElement('sellSpreadButton');
+    }
 
     setInterval(pollBestPricesAndRecomputeDeltas, 1000, leadingInstrumentSymbol, ledInstrumentSymbol);
 }
@@ -25,16 +35,10 @@ function pollBestPricesAndRecomputeDeltas(leadingInstrumentSymbol, ledInstrument
         let ledBidPrice = filteredResponse.filter(item => item.symbol === ledInstrumentSymbol).map(obj => obj.bidPrice);
         let ledOfferPrice = filteredResponse.filter(item => item.symbol === ledInstrumentSymbol).map(obj => obj.askPrice);
 
-        document.getElementById(`bpLeadingPrice1`).value = leadingBidPrice;
-        document.getElementById(`bpLedPrice1`).value = ledOfferPrice;
+        document.getElementById(`bpDeltaPcnt1`).value = parseFloat(((ledOfferPrice / leadingBidPrice - 1) * 100).toFixed(4))+' %';
+        document.getElementById(`bpDeltaUsd1`).value = (parseFloat(ledOfferPrice - leadingBidPrice).toFixed(4))+' $';
 
-        document.getElementById(`bpLeadingPrice2`).value = leadingOfferPrice;
-        document.getElementById(`bpLedPrice2`).value = ledBidPrice;
-
-        document.getElementById(`bpDeltaPcnt1`).value = parseFloat(((ledOfferPrice / leadingBidPrice - 1) * 100).toFixed(4));
-        document.getElementById(`bpDeltaUsd1`).value = (parseFloat(ledOfferPrice - leadingBidPrice).toFixed(4));
-
-        document.getElementById(`bpDeltaPcnt2`).value = parseFloat(((ledBidPrice / leadingOfferPrice - 1) * 100).toFixed(4));
-        document.getElementById(`bpDeltaUsd2`).value = (parseFloat(ledBidPrice - leadingOfferPrice).toFixed(4));
+        document.getElementById(`bpDeltaPcnt2`).value = parseFloat(((ledBidPrice / leadingOfferPrice - 1) * 100).toFixed(4))+' %';
+        document.getElementById(`bpDeltaUsd2`).value = (parseFloat(ledBidPrice - leadingOfferPrice).toFixed(4))+' $';
     });
 }
