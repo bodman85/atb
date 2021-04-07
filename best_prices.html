@@ -12,66 +12,84 @@
     <div class="container-fluid form-group" id="titleGrid">
         <div class="row mb-1">
             <div class="col">
-                <input type="text" class="form-control" id="bpLeadingInstrument1">
-            </div>
-            <div class="col-1 mt-2">
-                <label for="bpLeadingPrice1">Bid:</label>
+                <input type="text" readonly class="form-control" id="bpLeadingInstrument1">
             </div>
             <div class="col">
-                <input type="text" class="form-control" id="bpLeadingPrice1">
+                <input type="text" readonly class="form-control" id="bpLedInstrument1">
+            </div>
+            <div class="col-auto mt-2">
+                <label for="bpDeltaPcnt1">Spread:</label>
+            </div>
+            <div class="col-3">
+                <input type="text" readonly class="form-control" id="bpDeltaPcnt1">
+            </div>
+            <div class="col-3">
+                <input type="text" readonly class="form-control" id="bpDeltaUsd1">
+            </div>
+            <div class="col-auto mt-2">
+                <label for="bpTargetDeltaPcnt1">Target spread:</label>
+            </div>
+            <div class="col input-group">
+                <input type="text" class="form-control" id="bpTargetDeltaPcnt1">
+                <div class="input-group-append">
+                    <span class="input-group-text">%</span>
+                </div>
+            </div>
+            <div class="col input-group">
+                <input type="text" class="form-control" id="bpTargetDeltaUsd1">
+                <div class="input-group-append">
+                    <span class="input-group-text">$</span>
+                </div>
+            </div>
+            <div class="col-auto mt-2">
+                <label for="bpQuantity1">Quantity:</label>
+            </div>
+            <div class="col-2">
+                <input type="text" class="form-control" id="bpQuantity1">
             </div>
             <div class="col">
-                <input type="text" class="form-control" id="bpLedInstrument1">
-            </div>
-            <div class="col-1 mt-2">
-                <label for="bpLedPrice1">Offer:</label>
-            </div>
-            <div class="col">
-                <input type="text" class="form-control" id="bpLedPrice1">
-            </div>
-            <div class="col-2 mt-2">
-                <label for="bpDeltaPcnt1">Delta, %:</label>
-            </div>
-            <div class="col">
-                <input type="text" class="form-control" id="bpDeltaPcnt1">
-            </div>
-            <div class="col-2 mt-2">
-                <label for="bpDeltaUsd1">Delta, $:</label>
-            </div>
-            <div class="col">
-                <input type="text" class="form-control" id="bpDeltaUsd1">
+                <button type="button" class="btn btn-secondary" id="buySpreadButton">Buy spread</button>
             </div>
         </div>
         <div class="row">
             <div class="col">
-                <input type="text" class="form-control" id="bpLeadingInstrument2">
-            </div>
-            <div class="col-1 mt-2">
-                <label for="bpLeadingPrice2">Offer:</label>
+                <input type="text" readonly class="form-control" id="bpLeadingInstrument2">
             </div>
             <div class="col">
-                <input type="text" class="form-control" id="bpLeadingPrice2">
+                <input type="text" readonly class="form-control" id="bpLedInstrument2">
+            </div>
+            <div class="col-auto mt-2">
+                <label for="bpDeltaPcnt2">Spread:</label>
+            </div>
+            <div class="col-3">
+                <input type="text" readonly class="form-control" id="bpDeltaPcnt2">
+            </div>
+            <div class="col-3">
+                <input type="text" readonly class="form-control" id="bpDeltaUsd2">
+            </div>
+            <div class="col-auto mt-2">
+                <label for="bpTargetDeltaPcnt2">Target spread:</label>
+            </div>
+            <div class="col input-group">
+                <input type="text" class="form-control" id="bpTargetDeltaPcnt2">
+                <div class="input-group-append">
+                    <span class="input-group-text">%</span>
+                </div>
+            </div>
+            <div class="col input-group">
+                <input type="text" class="form-control" id="bpTargetDeltaUsd2">
+                <div class="input-group-append">
+                    <span class="input-group-text">$</span>
+                </div>
+            </div>
+            <div class="col-auto mt-2">
+                <label for="bpQuantity2">Quantity:</label>
+            </div>
+            <div class="col-2">
+                <input type="text" class="form-control" id="bpQuantity2">
             </div>
             <div class="col">
-                <input type="text" class="form-control" id="bpLedInstrument2">
-            </div>
-            <div class="col-1 mt-2">
-                <label for="bpLedPrice2">Bid:</label>
-            </div>
-            <div class="col">
-                <input type="text" class="form-control" id="bpLedPrice2">
-            </div>
-            <div class="col-2 mt-2">
-                <label for="bpDeltaPcnt2">Delta, %:</label>
-            </div>
-            <div class="col">
-                <input type="text" class="form-control" id="bpDeltaPcnt2">
-            </div>
-            <div class="col-2 mt-2">
-                <label for="bpDeltaUsd2">Delta, $:</label>
-            </div>
-            <div class="col">
-                <input type="text" class="form-control" id="bpDeltaUsd2">
+                <button type="button" class="btn btn-secondary" id="sellSpreadButton">Sell spread</button>
             </div>
         </div>
     </div>
