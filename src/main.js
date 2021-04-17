@@ -1,6 +1,6 @@
-var dataManager = require("./data-manager");
-var uiUtils = require("./ui-utils");
-var cacheManager = require("./cache-manager");
+const dataManager = require("./data-manager");
+const uiUtils = require("./ui-utils");
+const cacheManager = require("./cache-manager");
 
 let rowNumber;
 
