@@ -9,7 +9,7 @@
     <div class="mb-3 d-flex justify-content-center text-secondary">
         <h2>Bid and Ask</h2>
     </div>
-    <div class="container-fluid form-group" id="titleGrid">
+    <form class="container-fluid form-group" id="titleGrid">
         <div class="row mb-1">
             <div class="col">
                 <input type="text" readonly class="form-control" id="bpLeadingInstrument1">
@@ -45,7 +45,7 @@
                 <label for="bpQuantity1">Quantity:</label>
             </div>
             <div class="col-2">
-                <input type="text" class="form-control text-end" id="bpQuantity1">
+                <input type="text" class="form-control text-end" id="bpQuantity1" value= "1" required>
             </div>
             <div class="col">
                 <button type="button" class="btn btn-secondary" id="buySpreadButton">Buy spread</button>
@@ -86,13 +86,12 @@
                 <label for="bpQuantity2">Quantity:</label>
             </div>
             <div class="col-2">
-                <input type="text" class="form-control text-end" id="bpQuantity2">
+                <input type="text" class="form-control text-end" id="bpQuantity2" value= "1" required>
             </div>
             <div class="col">
                 <button type="button" class="btn btn-secondary" id="sellSpreadButton">Sell spread</button>
             </div>
         </div>
-    </div>
-    </div>
+    </form>
 </body>
 </html>
