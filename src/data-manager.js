@@ -1,8 +1,8 @@
 const cacheManager = require("./cache-manager");
 const CryptoJS = require("crypto-js");
 
-//const SERVER_URL = "https://dapi.binance.com/dapi/v1/"  //Prod env
-const SERVER_URL = "https://testnet.binancefuture.com/dapi/v1/" //Test env
+const SERVER_URL = "https://dapi.binance.com/dapi/v1/"  //Prod env
+//const SERVER_URL = "https://testnet.binancefuture.com/dapi/v1/" //Test env
 
 const ALL_SYMBOLS = "exchangeInfo";
 const SYMBOL_PRICE = "ticker/price";

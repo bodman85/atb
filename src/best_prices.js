@@ -137,7 +137,7 @@ function pollBestPricesAndPlaceOrder(callback) {
             targetLeadingOfferPrice: targetLeadingOfferPrice,
             targetLedBidPrice: targetLedBidPrice,
             targetLeadingBidPrice: targetLeadingBidPrice,
-            targetLedOfferPrice: targetLedOfferPrice,
+            targetLedOfferPrice: targetLedOfferPrice
         };
 
         if (callback) {
