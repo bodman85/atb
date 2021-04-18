@@ -1,6 +1,7 @@
 const cacheManager = require("./cache-manager");
 const CryptoJS = require("crypto-js");
 
+const PROXY_URL = "https://cors-anywhere.herokuapp.com/";
 const SERVER_URL = "https://dapi.binance.com/dapi/v1/"  //Prod env
 //const SERVER_URL = "https://testnet.binancefuture.com/dapi/v1/" //Test env
 
@@ -44,7 +45,7 @@ async function fireGetRequestWithCallback(path, callback) {
 }
 
 async function firePostRequestTo(path, apiKey) {
-    let url = SERVER_URL + path;
+    let url = PROXY_URL + SERVER_URL + path;
     var xhttp = new XMLHttpRequest();
     xhttp.open('POST', url, true);
     xhttp.setRequestHeader('X-MBX-APIKEY', apiKey);

@@ -9,11 +9,11 @@ const form = document.querySelector('form');
 
 window.onload = async function () {
 
-    document.getElementById('bpTargetDeltaPcnt1').addEventListener('input', fixTargetSpread);
-    document.getElementById('bpTargetDeltaUsd1').addEventListener('input', fixTargetSpread);
+    document.getElementById('bpTargetDeltaPcnt1').addEventListener('focus', fixTargetSpread);
+    document.getElementById('bpTargetDeltaUsd1').addEventListener('focus', fixTargetSpread);
 
-    document.getElementById('bpTargetDeltaPcnt2').addEventListener('input', fixTargetSpread);
-    document.getElementById('bpTargetDeltaUsd2').addEventListener('input', fixTargetSpread);
+    document.getElementById('bpTargetDeltaPcnt2').addEventListener('focus', fixTargetSpread);
+    document.getElementById('bpTargetDeltaUsd2').addEventListener('focus', fixTargetSpread);
 
     document.getElementById('bpLeadingInstrument1').value = leadingInstrumentSymbol;
     document.getElementById('bpLeadingInstrument2').value = leadingInstrumentSymbol;
@@ -85,11 +85,11 @@ function pollBestPricesAndPlaceOrder(callback) {
         let filteredResponse = response.filter(item => [leadingInstrumentSymbol, ledInstrumentSymbol].includes(item.symbol));
 
         //request bid and offer prices
-        let leadingBidPrice = filteredResponse.filter(item => item.symbol === leadingInstrumentSymbol).map(obj => obj.bidPrice);
-        let leadingOfferPrice = filteredResponse.filter(item => item.symbol === leadingInstrumentSymbol).map(obj => obj.askPrice);
+        let leadingBidPrice = parseFloat(filteredResponse.filter(item => item.symbol === leadingInstrumentSymbol).map(obj => obj.bidPrice));
+        let leadingOfferPrice = parseFloat(filteredResponse.filter(item => item.symbol === leadingInstrumentSymbol).map(obj => obj.askPrice));
 
-        let ledBidPrice = filteredResponse.filter(item => item.symbol === ledInstrumentSymbol).map(obj => obj.bidPrice);
-        let ledOfferPrice = filteredResponse.filter(item => item.symbol === ledInstrumentSymbol).map(obj => obj.askPrice);
+        let ledBidPrice = parseFloat(filteredResponse.filter(item => item.symbol === ledInstrumentSymbol).map(obj => obj.bidPrice));
+        let ledOfferPrice = parseFloat(filteredResponse.filter(item => item.symbol === ledInstrumentSymbol).map(obj => obj.askPrice));
 
         //recalculate deltas
         let deltaPcnt1 = parseFloat(((ledBidPrice / leadingOfferPrice - 1) * 100).toFixed(4));
@@ -105,11 +105,11 @@ function pollBestPricesAndPlaceOrder(callback) {
         document.getElementById(`bpDeltaUsd2`).value = deltaUsd2 + ' $';
 
         //recalculate target deltas
-        let targetDeltaPcnt1 = document.getElementById(`bpTargetDeltaPcnt1`).value;
-        let targetDeltaUsd1 = document.getElementById(`bpTargetDeltaUsd1`).value;
+        let targetDeltaPcnt1 = parseFloat(document.getElementById(`bpTargetDeltaPcnt1`).value);
+        let targetDeltaUsd1 = parseFloat(document.getElementById(`bpTargetDeltaUsd1`).value);
 
-        let targetDeltaPcnt2 = document.getElementById(`bpTargetDeltaPcnt2`).value;
-        let targetDeltaUsd2 = document.getElementById(`bpTargetDeltaUsd2`).value;
+        let targetDeltaPcnt2 = parseFloat(document.getElementById(`bpTargetDeltaPcnt2`).value);
+        let targetDeltaUsd2 = parseFloat(document.getElementById(`bpTargetDeltaUsd2`).value);
 
         if (targetSpreadFixedInPcnt1 && targetDeltaPcnt1) {
             document.getElementById(`bpTargetDeltaUsd1`).value = (deltaUsd1 * targetDeltaPcnt1 / deltaPcnt1).toFixed(4);
