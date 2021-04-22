@@ -21,17 +21,19 @@ window.onload = async function () {
     document.getElementById('bpLedInstrument1').value = ledInstrumentSymbol;
     document.getElementById('bpLedInstrument2').value = ledInstrumentSymbol;
 
+    document.getElementById("removeAllOrdersButton").addEventListener("click", removeAllOrders);
+
     if (cacheManager.isAuthorized()) {
         uiUtils.showElement('buySpreadButton');
-        document.getElementById('buySpreadButton').addEventListener('click', function () { pollBestPricesAndPlaceOrder(buySpread) });
+        document.getElementById('buySpreadButton').addEventListener('click', placeBuySpreadOrder);
         uiUtils.showElement('sellSpreadButton');
-        document.getElementById('sellSpreadButton').addEventListener('click', function () { pollBestPricesAndPlaceOrder(sellSpread) });
+        document.getElementById('sellSpreadButton').addEventListener('click', placeSellSpreadOrder);
     } else {
         uiUtils.hideElement('buySpreadButton');
         uiUtils.hideElement('sellSpreadButton');
     }
 
-    setInterval(pollBestPricesAndPlaceOrder, 1000);
+    setInterval(pollPricesAndProcessOrders, 1000);
 }
 
 let targetSpreadFixedInPcnt1 = true;
@@ -51,36 +53,82 @@ function fixTargetSpread() {
     }
 }
 
-function buySpread(prices) {
-    console.log(JSON.stringify(prices));
+function generateUUID() {
+    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
+}
+
+function placeBuySpreadOrder() {
+
     let quantity = document.getElementById('bpQuantity1').value;
-    if (quantity) {
-        // Buying leading instrument:
-        let queryString = `symbol=${leadingInstrumentSymbol}&side=BUY&type=LIMIT&timeInForce=GTC&quantity=${quantity}&price=${prices.targetLeadingOfferPrice}&timeStamp=${Date.now()}`;
-        dataManager.placeOrder(queryString);
-        // Selling led instrument:
-        queryString = `symbol=${ledInstrumentSymbol}&side=SELL&type=LIMIT&timeInForce=GTC&quantity=${quantity}&price=${prices.targetLedBidPrice}&timeStamp=${Date.now()}`;
-        dataManager.placeOrder(queryString);
-    } else {
+    if (!quantity) {
         form.reportValidity();
     }
+
+    let order = {
+        id: generateUUID(),
+        buy: leadingInstrumentSymbol,
+        sell: ledInstrumentSymbol,
+        quantity: quantity,
+        targetSpreadPcnt: document.getElementById('bpTargetDeltaPcnt1').value,
+        targetSpreadUsd: document.getElementById('bpTargetDeltaUsd1').value,
+        targetSpreadFixedInPcnt: targetSpreadFixedInPcnt1
+    }
+
+    cacheManager.cacheOrder(order);
 }
 
-function sellSpread(prices) {
+function placeSellSpreadOrder() {
     let quantity = document.getElementById('bpQuantity2').value;
-    if (quantity) {
-        // Selling leading instrument:
-        let queryString = `symbol=${leadingInstrumentSymbol}&side=SELL&type=LIMIT&timeInForce=GTC&quantity=${quantity}&price=${prices.targetLeadingBidPrice}&timeStamp=${Date.now()}`;
-        dataManager.placeOrder(queryString);
-        // Buying led instrument:
-        queryString = `symbol=${ledInstrumentSymbol}&side=BUY&type=LIMIT&timeInForce=GTC&quantity=${quantity}&price=${prices.targetLedOfferPrice}&timeStamp=${Date.now()}`;
-        dataManager.placeOrder(queryString);
-    } else {
+    if (!quantity) {
         form.reportValidity();
     }
+    let order = {
+        id: generateUUID(),
+        buy: ledInstrumentSymbol,
+        sell: leadingInstrumentSymbol,
+        quantity: quantity,
+        targetSpreadPcnt: document.getElementById('bpTargetDeltaPcnt2').value,
+        targetSpreadUsd: document.getElementById('bpTargetDeltaUsd2').value,
+        targetSpreadFixedInPcnt: targetSpreadFixedInPcnt2
+    }
+    cacheManager.cacheOrder(order);
 }
 
-function pollBestPricesAndPlaceOrder(callback) {
+function reloadOrders() {
+    document.getElementById("ordersDataGrid").innerHTML = '';
+    let orders = cacheManager.getCachedArray(cacheManager.ORDERS);
+    if (orders.length > 0) {
+        uiUtils.showElement("removeAllOrdersButton");
+    } else {
+        uiUtils.hideElement("removeAllOrdersButton");
+    }
+    for (let order of orders) {
+        uiUtils.showElement("removeAllOrdersButton");
+        let row = uiUtils.createTableRow();
+        row.appendChild(uiUtils.createTextColumn(orders.indexOf(order) + 1));
+        row.appendChild(uiUtils.createTextColumn(order.buy));
+        row.appendChild(uiUtils.createTextColumn(order.sell));
+        row.appendChild(uiUtils.createTextColumn(order.targetSpreadFixedInPcnt ? order.targetSpreadPcnt ? order.targetSpreadPcnt + '%' : '' : order.targetSpreadUsd ? order.targetSpreadUsd + '$' : ''));
+        row.appendChild(uiUtils.createTextColumn(order.quantity));
+        row.appendChild(uiUtils.createIconButtonColumn("fa-trash", function () { removeOrder(order.id) }));
+        document.getElementById("ordersDataGrid").appendChild(row);
+    }
+    return orders;
+}
+
+
+function removeOrder(orderId) {
+    let orders = cacheManager.getCachedArray(cacheManager.ORDERS).filter(order => order.id != orderId);
+    cacheManager.cache(cacheManager.ORDERS, orders);
+}
+
+function removeAllOrders() {
+    cacheManager.clearAll(cacheManager.ORDERS);
+}
+
+function pollPricesAndProcessOrders() {
     dataManager.requestBestPrices((response) => {
         let filteredResponse = response.filter(item => [leadingInstrumentSymbol, ledInstrumentSymbol].includes(item.symbol));
 
@@ -111,37 +159,77 @@ function pollBestPricesAndPlaceOrder(callback) {
         let targetDeltaPcnt2 = parseFloat(document.getElementById(`bpTargetDeltaPcnt2`).value);
         let targetDeltaUsd2 = parseFloat(document.getElementById(`bpTargetDeltaUsd2`).value);
 
-        if (targetSpreadFixedInPcnt1 && targetDeltaPcnt1) {
-            document.getElementById(`bpTargetDeltaUsd1`).value = (deltaUsd1 * targetDeltaPcnt1 / deltaPcnt1).toFixed(4);
-        } else if (!targetSpreadFixedInPcnt1 && targetDeltaUsd1) {
-            document.getElementById(`bpTargetDeltaPcnt1`).value = (deltaPcnt1 * targetDeltaUsd1 / deltaUsd1).toFixed(4);
+        if (targetSpreadFixedInPcnt1) {
+            if (targetDeltaPcnt1) {
+                document.getElementById(`bpTargetDeltaUsd1`).value = (deltaUsd1 * targetDeltaPcnt1 / deltaPcnt1).toFixed(4);
+            } else {
+                document.getElementById(`bpTargetDeltaUsd1`).value = '';
+            }
+        } else if (!targetSpreadFixedInPcnt1) {
+            if (targetDeltaUsd1) {
+                document.getElementById(`bpTargetDeltaPcnt1`).value = (deltaPcnt1 * targetDeltaUsd1 / deltaUsd1).toFixed(4);
+            } else {
+                document.getElementById(`bpTargetDeltaPcnt1`).value = '';
+            }
         }
-
-        if (targetSpreadFixedInPcnt2 && targetDeltaPcnt2) {
-            document.getElementById(`bpTargetDeltaUsd2`).value = (deltaUsd2 * targetDeltaPcnt2 / deltaPcnt2).toFixed(4);
-        } else if (!targetSpreadFixedInPcnt2 && targetDeltaUsd2) {
-            document.getElementById(`bpTargetDeltaPcnt2`).value = (deltaPcnt2 * targetDeltaUsd2 / deltaUsd2).toFixed(4);
+        if (targetSpreadFixedInPcnt2) {
+            if (targetDeltaPcnt2) {
+                document.getElementById(`bpTargetDeltaUsd2`).value = (deltaUsd2 * targetDeltaPcnt2 / deltaPcnt2).toFixed(4);
+            } else {
+                document.getElementById(`bpTargetDeltaUsd2`).value = '';
+            }
+        } else if (!targetSpreadFixedInPcnt2) {
+            if (targetDeltaUsd2) {
+                document.getElementById(`bpTargetDeltaPcnt2`).value = (deltaPcnt2 * targetDeltaUsd2 / deltaUsd2).toFixed(4);
+            } else {
+                document.getElementById(`bpTargetDeltaPcnt2`).value = '';
+            }
         }
+        //refresh orders
+        let orders = reloadOrders();
+        //process orders
+        for (let order of orders) {
+            let orderMustBeExecuted = false;
 
-        //recalculate target prices
-        let halfDelta1 = targetDeltaUsd1 ? (targetDeltaUsd1 - deltaUsd1) / 2 : 0;
-        let halfDelta2 = targetDeltaUsd2 ? (targetDeltaUsd2 - deltaUsd2) / 2 : 0;
-
-        let targetLeadingOfferPrice = Math.floor(leadingOfferPrice - halfDelta1);
-        let targetLedBidPrice = Math.ceil(ledBidPrice + halfDelta1);
-
-        let targetLeadingBidPrice = Math.ceil(leadingBidPrice + halfDelta2);
-        let targetLedOfferPrice = Math.floor(ledOfferPrice - halfDelta2);
-
-        let targetPrices = {
-            targetLeadingOfferPrice: targetLeadingOfferPrice,
-            targetLedBidPrice: targetLedBidPrice,
-            targetLeadingBidPrice: targetLeadingBidPrice,
-            targetLedOfferPrice: targetLedOfferPrice
-        };
-
-        if (callback) {
-            callback(targetPrices);
+            if (order.targetSpreadPcnt && order.targetSpreadUsd) {
+                if (order.targetSpreadFixedInPcnt) {
+                    if (order.buy === leadingInstrumentSymbol) {
+                        if (deltaPcnt1 >= order.targetSpreadPcnt) {
+                            orderMustBeExecuted = true;
+                        }
+                    } else if (order.buy === ledInstrumentSymbol) {
+                        if (deltaPcnt2 >= order.targetSpreadPcnt) {
+                            orderMustBeExecuted = true;
+                        }
+                    }
+                } else {
+                    if (order.buy === leadingInstrumentSymbol) {
+                        if (deltaUsd1 >= order.targetSpreadUsd) {
+                            orderMustBeExecuted = true;
+                        }
+                    } else if (order.buy === ledInstrumentSymbol) {
+                        if (deltaUsd2 >= order.targetSpreadUsd) {
+                            orderMustBeExecuted = true;
+                        }
+                    }
+                }
+            } else {
+                orderMustBeExecuted = true;
+            }
+            if (orderMustBeExecuted) {
+                let buyQueryString = `symbol=${order.buy}&side=BUY&type=MARKET&quantity=${order.quantity}&timeStamp=${Date.now()}`;
+                let sellQueryString = `symbol=${order.sell}&side=SELL&type=MARKET&quantity=${order.quantity}&timeStamp=${Date.now()}`;
+                dataManager.executeOrder(buyQueryString, function () { removeOrder(order.id) });
+                dataManager.executeOrder(sellQueryString, function () { removeOrder(order.id) });
+            }
         }
+        showPositionsFor(leadingInstrumentSymbol);
+        showPositionsFor(ledInstrumentSymbol);
     });
 }
+
+function showPositionsFor(symbolId) {
+    let queryString = `symbol=${symbolId}&timeStamp=${Date.now()}`;
+    dataManager.getTradesBySymbol(queryString, response => console.log(JSON.stringify(response)));
+}
+

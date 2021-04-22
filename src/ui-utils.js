@@ -15,7 +15,7 @@ function switchTo(newState) {
 }
 
 function clearDataGrid(buttonId, dataGridId) {
-    document.getElementById(buttonId).classList.toggle('invisible');
+    hideElement(buttonId);
     document.getElementById(dataGridId).innerHTML = '';
 }
 
@@ -67,13 +67,44 @@ function clearOptions(element) {
 }
 
 function showElement(id) {
-    var el = document.getElementById(id);
-    el.style.display = "flex";
+    document.getElementById(id).classList.remove('invisible');
 }
 
 function hideElement(id) {
-    var el = document.getElementById(id);
-    el.style.display = "none";
+    document.getElementById(id).classList.add('invisible');
+}
+
+function createTableRow() {
+    let row = document.createElement("div");
+    row.classList.add('row');
+    row.classList.add('mb-1');
+    return row;
+}
+
+function createTextColumn(text) {
+    let column = document.createElement("div");
+    column.classList.add("col");
+    column.innerHTML = text;
+    return column;
+}
+
+function createIconButtonColumn(iconName, clickHandler) {
+    let column = document.createElement("div");
+    column.classList.add("col");
+    let button = document.createElement("button");
+    button.classList.add("btn");
+    button.classList.add("btn-secondary");
+    button.appendChild(createFaIcon(iconName));
+    button.addEventListener("click", clickHandler);
+    column.appendChild(button);
+    return column;
+}
+
+function createFaIcon(name) {
+    let icon = document.createElement('span')
+    icon.classList.add("fa");
+    icon.classList.add(name);
+    return icon;
 }
 
 module.exports = {
@@ -85,5 +116,9 @@ module.exports = {
     fillDropdownWithData: fillDropdownWithData,
     clearDataGrid: clearDataGrid,
     showElement: showElement,
-    hideElement: hideElement
+    hideElement: hideElement,
+    createTableRow: createTableRow,
+    createTextColumn: createTextColumn,
+    createIconButtonColumn: createIconButtonColumn,
+    createFaIcon: createFaIcon
 }

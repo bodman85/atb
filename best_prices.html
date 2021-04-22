@@ -9,7 +9,7 @@
     <div class="mb-3 d-flex justify-content-center text-secondary">
         <h2>Bid and Ask</h2>
     </div>
-    <form class="container-fluid form-group" id="titleGrid">
+    <form class="container-fluid form-group mb-5" id="titleGrid">
         <div class="row mb-1">
             <div class="col">
                 <input type="text" readonly class="form-control" id="bpLeadingInstrument1">
@@ -45,7 +45,7 @@
                 <label for="bpQuantity1">Quantity:</label>
             </div>
             <div class="col-2">
-                <input type="text" class="form-control text-end" id="bpQuantity1" value= "1" required>
+                <input type="text" class="form-control text-end" id="bpQuantity1" value="1" required>
             </div>
             <div class="col">
                 <button type="button" class="btn btn-secondary" id="buySpreadButton">Buy spread</button>
@@ -86,12 +86,55 @@
                 <label for="bpQuantity2">Quantity:</label>
             </div>
             <div class="col-2">
-                <input type="text" class="form-control text-end" id="bpQuantity2" value= "1" required>
+                <input type="text" class="form-control text-end" id="bpQuantity2" value="1" required>
             </div>
             <div class="col">
                 <button type="button" class="btn btn-secondary" id="sellSpreadButton">Sell spread</button>
             </div>
         </div>
     </form>
+    <div class="m-3 d-flex justify-content-left text-secondary">
+        <h2>Market Orders:</h2>
+    </div>
+    <div class="container-fluid" id="ordersTitleGrid">
+        <div class="row border border-light font-bold mb-2">
+            <div class="col">
+                #
+            </div>
+            <div class="col">
+                Buy
+            </div>
+            <div class="col">
+                Sell
+            </div>
+            <div class="col">
+                Target Spread
+            </div>
+            <div class="col">
+                Quantity
+            </div>
+            <div class="col">
+            </div>
+        </div>
+    </div>
+    <div class="container-fluid" id="ordersDataGrid">
+    </div>
+    <div class="container-fluid" id="ordersButtonGrid">
+        <div class="row mb-2">
+            <div class="col">
+            </div>
+            <div class="col">
+            </div>
+            <div class="col">
+            </div>
+            <div class="col">
+            </div>
+            <div class="col">
+            </div>
+            <div class="col">
+                <button type="button" class="btn btn-secondary invisible" id="removeAllOrdersButton">Remove all</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

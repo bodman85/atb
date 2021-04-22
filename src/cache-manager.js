@@ -4,21 +4,14 @@ const LED_INSTRUMENT = "ledInstrument";
 const LEADING_INSTRUMENTS = "leadingInstruments";
 const LED_INSTRUMENTS = "ledInstruments";
 
+const ORDERS = "orders";
+
 const API_KEY = "apiKey";
 const SECRET_KEY = "secretKey"
 
-
-function getInstruments(key) {
-    let item = window.localStorage.getItem(key);
-    if (item) {
-        return JSON.parse(item);
-    }
-    return [];
-}
-
-function cacheDataRow(rn) {
-    let leadingInstruments = getInstruments(LEADING_INSTRUMENTS);
-    let ledInstruments = getInstruments(LED_INSTRUMENTS);
+function cacheInstrumentsDataRow(rn) {
+    let leadingInstruments = getCachedArray(LEADING_INSTRUMENTS);
+    let ledInstruments = getCachedArray(LED_INSTRUMENTS);
     leadingInstruments.push(document.getElementById(LEADING_INSTRUMENT+rn).value);
     ledInstruments.push(document.getElementById(LED_INSTRUMENT+rn).value);
     cacheInstruments(leadingInstruments, ledInstruments);
@@ -27,6 +20,12 @@ function cacheDataRow(rn) {
 function cacheInstruments(leadingInstruments, ledInstruments) {
     cache(LEADING_INSTRUMENTS, leadingInstruments);
     cache(LED_INSTRUMENTS, ledInstruments);
+}
+
+function cacheOrder(order) {
+    let orders = getCachedArray(ORDERS);
+    orders.push(order);
+    cache(ORDERS, orders);
 }
 
 function cache(key, value) {
@@ -42,8 +41,20 @@ function getCached(key) {
     }
 }
 
+function getCachedArray(key) {
+    let item = window.localStorage.getItem(key);
+    if (item) {
+        return JSON.parse(item);
+    }
+    return [];
+}
+
 function remove(key) {
     window.localStorage.removeItem(key);
+}
+
+function clearAll(key) {
+    cache(key, []);
 }
 
 function isAuthorized() {
@@ -52,46 +63,50 @@ function isAuthorized() {
     return (apiKey && secretKey);
 }
 
-function selectCachedValues(rn) {
-    document.getElementById(LEADING_INSTRUMENT + rn).value = getInstruments(LEADING_INSTRUMENTS)[rn - 1];
-    document.getElementById(LED_INSTRUMENT + rn).value = getInstruments(LED_INSTRUMENTS)[rn - 1];
+function selectCachedInstruments(rn) {
+    document.getElementById(LEADING_INSTRUMENT + rn).value = getCachedArray(LEADING_INSTRUMENTS)[rn - 1];
+    document.getElementById(LED_INSTRUMENT + rn).value = getCachedArray(LED_INSTRUMENTS)[rn - 1];
 }
 
-function replaceCachedRow(rn) {
-    let leadingInstruments = getInstruments(LEADING_INSTRUMENTS);
-    let ledInstruments = getInstruments(LED_INSTRUMENTS);
+function replaceCachedInstrumentsInRow(rn) {
+    let leadingInstruments = getCachedArray(LEADING_INSTRUMENTS);
+    let ledInstruments = getCachedArray(LED_INSTRUMENTS);
     leadingInstruments[rn - 1] = document.getElementById(LEADING_INSTRUMENT + rn).value;
     ledInstruments[rn - 1] = document.getElementById(LED_INSTRUMENT + rn).value;
     cacheInstruments(leadingInstruments, ledInstruments);
 }
 
-function removeCachedRow(rn) {
-    let leadingInstruments = getInstruments(LEADING_INSTRUMENTS);
-    let ledInstruments = getInstruments(LED_INSTRUMENTS);
+function removeCachedInstrumentsRow(rn) {
+    let leadingInstruments = getCachedArray(LEADING_INSTRUMENTS);
+    let ledInstruments = getCachedArray(LED_INSTRUMENTS);
     leadingInstruments.splice(rn - 1, 1);
     ledInstruments.splice(rn - 1, 1);
     cacheInstruments(leadingInstruments, ledInstruments);
 }
 
-function removeAllCachedRows() {
+function removeAllCachedInstruments() {
     cacheInstruments([], []);
 }
 
-function getCachedRowsCount() {
-    return getInstruments(LEADING_INSTRUMENTS).length;
+function getCachedInstrumentsCount() {
+    return getCachedArray(LEADING_INSTRUMENTS).length;
 }
 
 module.exports = {
+    ORDERS: ORDERS,
     cache: cache,
     getCached: getCached,
+    getCachedArray: getCachedArray,
     remove: remove,
+    clearAll: clearAll,
     API_KEY: API_KEY,
     SECRET_KEY: SECRET_KEY,
     isAuthorized: isAuthorized,
-    selectCachedValues: selectCachedValues,
-    cacheDataRow: cacheDataRow,
-    replaceCachedRow: replaceCachedRow,
-    removeCachedRow: removeCachedRow,
-    removeAllCachedRows: removeAllCachedRows,
-    getCachedRowsCount: getCachedRowsCount
+    selectCachedInstruments: selectCachedInstruments,
+    cacheInstrumentsDataRow: cacheInstrumentsDataRow,
+    replaceCachedInstrumentsInRow: replaceCachedInstrumentsInRow,
+    removeCachedInstrumentsRow: removeCachedInstrumentsRow,
+    removeAllCachedInstruments: removeAllCachedInstruments,
+    getCachedInstrumentsCount: getCachedInstrumentsCount,
+    cacheOrder: cacheOrder
 }

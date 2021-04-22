@@ -1,14 +1,15 @@
 const cacheManager = require("./cache-manager");
 const CryptoJS = require("crypto-js");
 
-const PROXY_URL = "https://cors-anywhere.herokuapp.com/";
-const SERVER_URL = "https://dapi.binance.com/dapi/v1/"  //Prod env
-//const SERVER_URL = "https://testnet.binancefuture.com/dapi/v1/" //Test env
+const PROXY_URL = "https://atb-proxy.herokuapp.com/";
+const SERVER_URL = "https://dapi.binance.com/"  //Prod env
+//const SERVER_URL = "https://testnet.binancefuture.com/" //Test env
 
-const ALL_SYMBOLS = "exchangeInfo";
-const SYMBOL_PRICE = "ticker/price";
-const BEST_PRICES = "ticker/bookTicker";
-const PLACE_ORDER = "order";
+const ALL_SYMBOLS = "dapi/v1/exchangeInfo";
+const SYMBOL_PRICE = "dapi/v1/ticker/price";
+const BEST_PRICES = "dapi/v1/ticker/bookTicker";
+const PLACE_ORDER = "dapi/v1/order";
+const MY_TRADES = "api/v3/myTrades";
 
 let cachedSymbols = [];
 
@@ -33,26 +34,36 @@ async function fireGetRequestTo(path) {
 }
 
 async function fireGetRequestWithCallback(path, callback) {
-    let url = SERVER_URL + path;
-    let xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function () {
+    let url = PROXY_URL + SERVER_URL + path;
+    let request = new XMLHttpRequest();
+    request.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
-            callback(JSON.parse(xhttp.responseText));
+            callback(JSON.parse(request.responseText));
         }
     };
-    xhttp.open("GET", url, true);
-    xhttp.send();
+    request.open("GET", url, true);
+    let apiKey = cacheManager.getCached(cacheManager.API_KEY);
+    if (apiKey) {
+        request.setRequestHeader('X-MBX-APIKEY', apiKey);
+    }
+    request.send();
 }
 
-async function firePostRequestTo(path, apiKey) {
+async function firePostRequestWithCallback(path, callback) {
     let url = PROXY_URL + SERVER_URL + path;
-    var xhttp = new XMLHttpRequest();
-    xhttp.open('POST', url, true);
-    xhttp.setRequestHeader('X-MBX-APIKEY', apiKey);
-    xhttp.onload = function () {
-        console.log(xhttp.responseText);
+    let request = new XMLHttpRequest();
+    request.onreadystatechange = function () {
+        if (request.readyState == 4 && request.status == 200) {
+            callback(request.responseText); // Another callback here
+        }
+        console.log(request.responseText);
+    }; 
+    request.open('POST', url, true);
+    let apiKey = cacheManager.getCached(cacheManager.API_KEY);
+    if (apiKey) {
+        request.setRequestHeader('X-MBX-APIKEY', apiKey);
     }
-    xhttp.send();
+    request.send();
 }
 
 function requestPrice(symbol, callback) {
@@ -65,22 +76,32 @@ function requestBestPrices(callback) {
     fireGetRequestWithCallback(path, callback);
 }
 
-function placeOrder(queryString) {
-    let apiKey = cacheManager.getCached(cacheManager.API_KEY);
+function executeOrder(queryString, callback) {
     //let apiKey = '0d59086bc89d630eb5d6df7d174ad4eed4bc35f3207332dccd6717ad843dea13';
     //let secretKey = '68037734469c00cde71dece5527908e3350d4b03583275458fb5ae7eae28c118';
+    queryString += sign(queryString);
+    let path = PLACE_ORDER + '?' + queryString;
+    firePostRequestWithCallback(path, callback);
+}
+
+function getTradesBySymbol(queryString, callback) {
+    queryString += sign(queryString);
+    let path = MY_TRADES + '?' + queryString;
+    fireGetRequestWithCallback(path, callback);
+}
+
+function sign(queryString) {
     let secretKey = cacheManager.getCached(cacheManager.SECRET_KEY);
     let signature = CryptoJS.HmacSHA256(queryString, secretKey).toString(CryptoJS.enc.Hex)
-    queryString += `&signature=${signature}`;
-    let path = PLACE_ORDER + '?' + queryString;
-    firePostRequestTo(path, apiKey);
+    return `&signature=${signature}`;
 }
 
 module.exports = {
     getAllSymbols: getAllSymbols,
     requestPrice: requestPrice,
     requestBestPrices: requestBestPrices,
-    placeOrder: placeOrder
+    executeOrder: executeOrder,
+    getTradesBySymbol: getTradesBySymbol
 }
 
 
