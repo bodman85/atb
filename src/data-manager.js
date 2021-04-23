@@ -1,15 +1,24 @@
 const cacheManager = require("./cache-manager");
 const CryptoJS = require("crypto-js");
+const W3CWebSocket = require('websocket').w3cwebsocket;
 
 const PROXY_URL = "https://atb-proxy.herokuapp.com/";
-const SERVER_URL = "https://dapi.binance.com/"  //Prod env
-//const SERVER_URL = "https://testnet.binancefuture.com/" //Test env
+
+//Prod env:
+const SERVER_URL = "https://dapi.binance.com/"  
+const WEBSOCKET_URL = "wss://dstream.binance.com/ws/" 
+
+/*
+//Test env:
+const SERVER_URL = "https://testnet.binancefuture.com/" 
+const WEBSOCKET_URL = "wss://dstream.binancefuture.com/ws/" 
+*/
 
 const ALL_SYMBOLS = "dapi/v1/exchangeInfo";
 const SYMBOL_PRICE = "dapi/v1/ticker/price";
 const BEST_PRICES = "dapi/v1/ticker/bookTicker";
 const PLACE_ORDER = "dapi/v1/order";
-const MY_TRADES = "api/v3/myTrades";
+const LISTEN_KEY = "dapi/v1/listenKey";
 
 let cachedSymbols = [];
 
@@ -84,10 +93,15 @@ function executeOrder(queryString, callback) {
     firePostRequestWithCallback(path, callback);
 }
 
-function getTradesBySymbol(queryString, callback) {
-    queryString += sign(queryString);
-    let path = MY_TRADES + '?' + queryString;
-    fireGetRequestWithCallback(path, callback);
+function listenToAccountUpdate() {
+    firePostRequestWithCallback(LISTEN_KEY, logAccountUpdate);
+}
+
+function logAccountUpdate(listenKey) {
+    const client = new W3CWebSocket(WEBSOCKET_URL + listenKey);
+    client.onmessage = function (e) {
+        console.log(JSON.stringify(e.data));
+    };
 }
 
 function sign(queryString) {
@@ -101,7 +115,7 @@ module.exports = {
     requestPrice: requestPrice,
     requestBestPrices: requestBestPrices,
     executeOrder: executeOrder,
-    getTradesBySymbol: getTradesBySymbol
+    listenToAccountUpdate: listenToAccountUpdate
 }
 
 

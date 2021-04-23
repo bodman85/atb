@@ -34,6 +34,7 @@ window.onload = async function () {
     }
 
     setInterval(pollPricesAndProcessOrders, 1000);
+    dataManager.listenToAccountUpdate();
 }
 
 let targetSpreadFixedInPcnt1 = true;
@@ -223,13 +224,7 @@ function pollPricesAndProcessOrders() {
                 dataManager.executeOrder(sellQueryString, function () { removeOrder(order.id) });
             }
         }
-        showPositionsFor(leadingInstrumentSymbol);
-        showPositionsFor(ledInstrumentSymbol);
     });
 }
 
-function showPositionsFor(symbolId) {
-    let queryString = `symbol=${symbolId}&timeStamp=${Date.now()}`;
-    dataManager.getTradesBySymbol(queryString, response => console.log(JSON.stringify(response)));
-}
 
