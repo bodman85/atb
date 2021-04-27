@@ -144,8 +144,8 @@ function pollPricesAndProcessOrders() {
         let deltaPcnt1 = parseFloat(((ledBidPrice / leadingOfferPrice - 1) * 100).toFixed(4));
         let deltaUsd1 = parseFloat(ledBidPrice - leadingOfferPrice).toFixed(4);
 
-        let deltaPcnt2 = parseFloat(((leadingBidPrice / ledOfferPrice - 1) * 100).toFixed(4));
-        let deltaUsd2 = parseFloat(leadingBidPrice - ledOfferPrice).toFixed(4);
+        let deltaPcnt2 = parseFloat(((ledOfferPrice / leadingBidPrice - 1) * 100).toFixed(4));
+        let deltaUsd2 = parseFloat(ledOfferPrice - leadingBidPrice).toFixed(4);
 
         document.getElementById(`bpDeltaPcnt1`).value = deltaPcnt1 + ' %';
         document.getElementById(`bpDeltaUsd1`).value = deltaUsd1 + ' $';
@@ -199,7 +199,7 @@ function pollPricesAndProcessOrders() {
                             orderMustBeExecuted = true;
                         }
                     } else if (order.buy === ledInstrumentSymbol) {
-                        if (deltaPcnt2 >= order.targetSpreadPcnt) {
+                        if (deltaPcnt2 <= order.targetSpreadPcnt) {
                             orderMustBeExecuted = true;
                         }
                     }
@@ -209,7 +209,7 @@ function pollPricesAndProcessOrders() {
                             orderMustBeExecuted = true;
                         }
                     } else if (order.buy === ledInstrumentSymbol) {
-                        if (deltaUsd2 >= order.targetSpreadUsd) {
+                        if (deltaUsd2 <= order.targetSpreadUsd) {
                             orderMustBeExecuted = true;
                         }
                     }
@@ -218,10 +218,11 @@ function pollPricesAndProcessOrders() {
                 orderMustBeExecuted = true;
             }
             if (orderMustBeExecuted) {
-                let buyQueryString = `symbol=${order.buy}&side=BUY&type=MARKET&quantity=${order.quantity}&timeStamp=${Date.now()}`;
-                let sellQueryString = `symbol=${order.sell}&side=SELL&type=MARKET&quantity=${order.quantity}&timeStamp=${Date.now()}`;
-                dataManager.executeOrder(buyQueryString, function () { removeOrder(order.id) });
-                dataManager.executeOrder(sellQueryString, function () { removeOrder(order.id) });
+                while (order.quantity > 0) {
+                    dataManager.executeOrder(order, function () { console.log(`Order ${order.id} executed`) });
+                    order.quantity--;
+                }
+                removeOrder(order.id);
             }
         }
     });
