@@ -4,10 +4,10 @@ const W3CWebSocket = require('websocket').w3cwebsocket;
 
 const PROXY_URL = "https://atb-proxy.herokuapp.com/";
 
-//Prod env:
-const SERVER_URL = "https://dapi.binance.com/"  
-const WEBSOCKET_URL = "wss://dstream.binance.com/ws/" 
 
+//Prod env:
+const SERVER_URL = "https://dapi.binance.com/"
+const WEBSOCKET_URL = "wss://dstream.binance.com/ws/"
 /*
 //Test env:
 const SERVER_URL = "https://testnet.binancefuture.com/" 
@@ -18,7 +18,8 @@ const ALL_SYMBOLS = "dapi/v1/exchangeInfo";
 const SYMBOL_PRICE = "dapi/v1/ticker/price";
 const BEST_PRICES = "dapi/v1/ticker/bookTicker";
 const PLACE_ORDER = "dapi/v1/order";
-const PLACE_BATCH_ORDERS = "dapi/v1/batchOrders";
+const POSITIONS = 'dapi/v1/positionRisk';
+
 const LISTEN_KEY = "dapi/v1/listenKey";
 
 let cachedSymbols = [];
@@ -63,8 +64,8 @@ async function firePostRequestWithCallback(path, callback) {
     let url = PROXY_URL + SERVER_URL + path;
     let request = new XMLHttpRequest();
     request.onreadystatechange = function () {
-        if (request.readyState == 4 && request.status == 200) {
-            callback(request.responseText); // Another callback here
+        if (request.readyState == 4 && request.status == 200 && callback) {
+            callback(request.responseText);
         }
         console.log(request.responseText);
     }; 
@@ -87,14 +88,34 @@ function requestBestPrices(callback) {
 }
 
 function executeOrder(order, callback) {
-    //let apiKey = '0d59086bc89d630eb5d6df7d174ad4eed4bc35f3207332dccd6717ad843dea13';
-    //let secretKey = '68037734469c00cde71dece5527908e3350d4b03583275458fb5ae7eae28c118';
+    //test apiKey = '0d59086bc89d630eb5d6df7d174ad4eed4bc35f3207332dccd6717ad843dea13';
+    //test secretKey = '68037734469c00cde71dece5527908e3350d4b03583275458fb5ae7eae28c118';
     let buyQueryString = `symbol=${order.buy}&side=BUY&type=MARKET&quantity=1&timeStamp=${Date.now()}`;
     let sellQueryString = `symbol=${order.sell}&side=SELL&type=MARKET&quantity=1&timeStamp=${Date.now()}`;
     buyQueryString += sign(buyQueryString);
     sellQueryString += sign(sellQueryString);
     firePostRequestWithCallback(PLACE_ORDER + '?' + buyQueryString, callback);
     firePostRequestWithCallback(PLACE_ORDER + '?' + sellQueryString, callback);
+}
+
+function requestPositions(callback) {
+    let queryString = `timeStamp=${Date.now()}`;
+    queryString += sign(queryString);
+    fireGetRequestWithCallback(POSITIONS + '?' + queryString, callback);
+}
+
+function closePosition(position, callback) {
+    let quantity = Math.abs(position.positionAmt);
+    let side = position.positionAmt < 0 ? 'BUY' : 'SELL';
+    let queryString = `symbol=${position.symbol}&side=${side}&type=MARKET&quantity=${quantity}&timeStamp=${Date.now()}`;
+    queryString += sign(queryString);
+    firePostRequestWithCallback(PLACE_ORDER + '?' + queryString, callback);
+}
+
+function closeAllPositions(positions) {
+    for (let position of positions) {
+        closePosition(position);
+    }
 }
 
 function listenToAccountUpdate() {
@@ -119,6 +140,9 @@ module.exports = {
     requestPrice: requestPrice,
     requestBestPrices: requestBestPrices,
     executeOrder: executeOrder,
+    requestPositions: requestPositions,
+    closePosition: closePosition,
+    closeAllPositions: closeAllPositions,
     listenToAccountUpdate: listenToAccountUpdate
 }
 

@@ -22,6 +22,7 @@ window.onload = async function () {
     document.getElementById('bpLedInstrument2').value = ledInstrumentSymbol;
 
     document.getElementById("removeAllOrdersButton").addEventListener("click", removeAllOrders);
+    document.getElementById("closeAllPositionsButton").addEventListener("click", function () { dataManager.closeAllPositions(openPositions) });
 
     if (cacheManager.isAuthorized()) {
         uiUtils.showElement('buySpreadButton');
@@ -35,6 +36,7 @@ window.onload = async function () {
 
     setInterval(pollPricesAndProcessOrders, 1000);
     dataManager.listenToAccountUpdate();
+    setInterval(pollPositions, 1000);
 }
 
 let targetSpreadFixedInPcnt1 = true;
@@ -106,7 +108,6 @@ function reloadOrders() {
         uiUtils.hideElement("removeAllOrdersButton");
     }
     for (let order of orders) {
-        uiUtils.showElement("removeAllOrdersButton");
         let row = uiUtils.createTableRow();
         row.appendChild(uiUtils.createTextColumn(orders.indexOf(order) + 1));
         row.appendChild(uiUtils.createTextColumn(order.buy));
@@ -225,6 +226,34 @@ function pollPricesAndProcessOrders() {
                 removeOrder(order.id);
             }
         }
+    });
+}
+
+let openPositions = {};
+function pollPositions() {
+    dataManager.requestPositions(positions => {
+        openPositions = positions.filter(p => parseFloat(p.unRealizedProfit) !== 0);
+        //console.log('Positions: ' + JSON.stringify(openPositions));
+        if (openPositions.length > 0) {
+            uiUtils.showElement("closeAllPositionsButton");
+        } else {
+            uiUtils.hideElement("closeAllPositionsButton");
+        }
+        let totalPnl = 0;
+        document.getElementById("positionsDataGrid").innerHTML = '';
+        document.getElementById("totalPnl").innerHTML = '';
+        for (let position of openPositions) {
+            totalPnl += parseFloat(position.unRealizedProfit);
+            let row = uiUtils.createTableRow();
+            row.appendChild(uiUtils.createTextColumn(position.symbol));
+            row.appendChild(uiUtils.createTextColumn(position.positionAmt));
+            row.appendChild(uiUtils.createTextColumn(parseFloat(position.entryPrice).toFixed(4)));
+            row.appendChild(uiUtils.createTextColumn(parseFloat(position.markPrice).toFixed(4)));
+            row.appendChild(uiUtils.createTextColumn(parseFloat(position.unRealizedProfit).toFixed(6)));
+            row.appendChild(uiUtils.createIconButtonColumn("fa-times", function () {dataManager.closePosition(position)}));
+            document.getElementById("positionsDataGrid").appendChild(row);
+        }
+        document.getElementById("totalPnl").innerHTML = "Total: " + parseFloat(totalPnl).toFixed(6);
     });
 }
 
