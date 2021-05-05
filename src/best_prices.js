@@ -25,13 +25,13 @@ window.onload = async function () {
     document.getElementById("closeAllPositionsButton").addEventListener("click", function () { dataManager.closeAllPositions(openPositions) });
 
     if (cacheManager.isAuthorized()) {
-        uiUtils.showElement('buySpreadButton');
-        document.getElementById('buySpreadButton').addEventListener('click', placeBuySpreadOrder);
         uiUtils.showElement('sellSpreadButton');
         document.getElementById('sellSpreadButton').addEventListener('click', placeSellSpreadOrder);
+        uiUtils.showElement('buySpreadButton');
+        document.getElementById('buySpreadButton').addEventListener('click', placeBuySpreadOrder);
     } else {
-        uiUtils.hideElement('buySpreadButton');
         uiUtils.hideElement('sellSpreadButton');
+        uiUtils.hideElement('buySpreadButton');
     }
 
     setInterval(pollPricesAndProcessOrders, 1000);
@@ -62,7 +62,7 @@ function generateUUID() {
     );
 }
 
-function placeBuySpreadOrder() {
+function placeSellSpreadOrder() {
 
     let quantity = document.getElementById('bpQuantity1').value;
     if (!quantity) {
@@ -82,7 +82,7 @@ function placeBuySpreadOrder() {
     cacheManager.cacheOrder(order);
 }
 
-function placeSellSpreadOrder() {
+function placeBuySpreadOrder() {
     let quantity = document.getElementById('bpQuantity2').value;
     if (!quantity) {
         form.reportValidity();
