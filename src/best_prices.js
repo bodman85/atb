@@ -220,7 +220,7 @@ function pollPricesAndProcessOrders() {
             }
             if (orderMustBeExecuted) {
                 while (order.quantity > 0) {
-                    dataManager.executeOrder(order, function () { console.log(`Order ${order.id} executed`) });
+                    dataManager.executeOrder(order);
                     order.quantity--;
                 }
                 removeOrder(order.id);

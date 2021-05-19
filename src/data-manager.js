@@ -67,7 +67,6 @@ async function firePostRequestWithCallback(path, callback) {
         if (request.readyState == 4 && request.status == 200 && callback) {
             callback(request.responseText);
         }
-        console.log(request.responseText);
     }; 
     request.open('POST', url, true);
     let apiKey = cacheManager.getCached(cacheManager.API_KEY);
@@ -90,8 +89,8 @@ function requestBestPrices(callback) {
 function executeOrder(order, callback) {
     //test apiKey = '0d59086bc89d630eb5d6df7d174ad4eed4bc35f3207332dccd6717ad843dea13';
     //test secretKey = '68037734469c00cde71dece5527908e3350d4b03583275458fb5ae7eae28c118';
-    let buyQueryString = `symbol=${order.buy}&side=BUY&type=MARKET&quantity=1&timeStamp=${Date.now()}`;
-    let sellQueryString = `symbol=${order.sell}&side=SELL&type=MARKET&quantity=1&timeStamp=${Date.now()}`;
+    let buyQueryString = `symbol=${order.buy}&side=BUY&type=MARKET&quantity=1&timeStamp=${Date.now()}&recvWindow=60000`;
+    let sellQueryString = `symbol=${order.sell}&side=SELL&type=MARKET&quantity=1&timeStamp=${Date.now()}&recvWindow=60000`;
     buyQueryString += sign(buyQueryString);
     sellQueryString += sign(sellQueryString);
     firePostRequestWithCallback(PLACE_ORDER + '?' + buyQueryString, callback);
