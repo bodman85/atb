@@ -74,6 +74,7 @@ function placeSellSpreadOrder() {
         buy: leadingInstrumentSymbol,
         sell: ledInstrumentSymbol,
         quantity: quantity,
+        executed: 0,
         targetSpreadPcnt: document.getElementById('bpTargetDeltaPcnt1').value,
         targetSpreadUsd: document.getElementById('bpTargetDeltaUsd1').value,
         targetSpreadFixedInPcnt: targetSpreadFixedInPcnt1
@@ -92,6 +93,7 @@ function placeBuySpreadOrder() {
         buy: ledInstrumentSymbol,
         sell: leadingInstrumentSymbol,
         quantity: quantity,
+        executed: 0,
         targetSpreadPcnt: document.getElementById('bpTargetDeltaPcnt2').value,
         targetSpreadUsd: document.getElementById('bpTargetDeltaUsd2').value,
         targetSpreadFixedInPcnt: targetSpreadFixedInPcnt2
@@ -114,17 +116,13 @@ function reloadOrders() {
         row.appendChild(uiUtils.createTextColumn(order.sell));
         row.appendChild(uiUtils.createTextColumn(order.targetSpreadFixedInPcnt ? order.targetSpreadPcnt ? order.targetSpreadPcnt + '%' : '' : order.targetSpreadUsd ? order.targetSpreadUsd + '$' : ''));
         row.appendChild(uiUtils.createTextColumn(order.quantity));
-        row.appendChild(uiUtils.createIconButtonColumn("fa-trash", function () { removeOrder(order.id) }));
+        row.appendChild(uiUtils.createTextColumn(order.executed));
+        row.appendChild(uiUtils.createIconButtonColumn("fa-trash", function () { cacheManager.removeOrder(order.id) }));
         document.getElementById("ordersDataGrid").appendChild(row);
     }
     return orders;
 }
 
-
-function removeOrder(orderId) {
-    let orders = cacheManager.getCachedArray(cacheManager.ORDERS).filter(order => order.id != orderId);
-    cacheManager.cache(cacheManager.ORDERS, orders);
-}
 
 function removeAllOrders() {
     cacheManager.clearAll(cacheManager.ORDERS);
@@ -219,11 +217,12 @@ function pollPricesAndProcessOrders() {
                 orderMustBeExecuted = true;
             }
             if (orderMustBeExecuted) {
-                while (order.quantity > 0) {
-                    dataManager.executeOrder(order);
-                    order.quantity--;
+                for (let i = order.executed; i < order.quantity; i++) {
+                    dataManager.executeOrder(order, function () { order.executed+=0.5; cacheManager.cacheOrder(order); reloadOrders(); });
                 }
-                removeOrder(order.id);
+            }
+            if (order.executed == order.quantity) {
+                cacheManager.removeOrder(order.id);
             }
         }
     });

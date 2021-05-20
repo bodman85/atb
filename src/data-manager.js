@@ -60,6 +60,11 @@ async function fireGetRequestWithCallback(path, callback) {
     request.send();
 }
 
+async function fireTestRequestWithCallback(path, callback) {
+    setTimeout(function () { console.log("Simulating request..."); }, 1000);
+    callback();
+}
+
 async function firePostRequestWithCallback(path, callback) {
     let url = PROXY_URL + SERVER_URL + path;
     let request = new XMLHttpRequest();
