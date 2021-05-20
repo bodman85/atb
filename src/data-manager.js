@@ -60,9 +60,17 @@ async function fireGetRequestWithCallback(path, callback) {
     request.send();
 }
 
+
 async function fireTestRequestWithCallback(path, callback) {
-    setTimeout(function () { console.log("Simulating request..."); }, 1000);
-    callback();
+    let url = "http://localhost:8080";
+    let request = new XMLHttpRequest();
+    request.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200 && callback) {
+            callback(request.responseText);
+        }
+    };
+    request.open("GET", url, true);
+    request.send();
 }
 
 async function firePostRequestWithCallback(path, callback) {

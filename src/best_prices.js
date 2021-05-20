@@ -218,7 +218,7 @@ function pollPricesAndProcessOrders() {
             }
             if (orderMustBeExecuted) {
                 for (let i = order.executed; i < order.quantity; i++) {
-                    dataManager.executeOrder(order, function () { order.executed+=0.5; cacheManager.cacheOrder(order); reloadOrders(); });
+                    dataManager.executeOrder(order, function () { order.executed += 0.5; cacheManager.updateOrder(order); reloadOrders(); });
                 }
             }
             if (order.executed == order.quantity) {

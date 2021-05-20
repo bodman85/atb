@@ -24,13 +24,20 @@ function cacheInstruments(leadingInstruments, ledInstruments) {
 
 function cacheOrder(order) {
     let orders = getCachedArray(ORDERS);
+    orders.push(order);
+    cache(ORDERS, orders);
+}
+
+function updateOrder(order) {
+    let orders = getCachedArray(ORDERS);
     let index = orders.findIndex(o => o.id === order.id);
     if (index > -1) {
         orders[index] = order;
+        cache(ORDERS, orders);
+        return true;
     } else {
-        orders.push(order);
+        return false;
     }
-    cache(ORDERS, orders);
 }
 
 function removeOrder(orderId) {
@@ -119,5 +126,6 @@ module.exports = {
     removeAllCachedInstruments: removeAllCachedInstruments,
     getCachedInstrumentsCount: getCachedInstrumentsCount,
     cacheOrder: cacheOrder,
+    updateOrder: updateOrder,
     removeOrder: removeOrder
 }
