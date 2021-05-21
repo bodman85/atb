@@ -45,6 +45,10 @@ function removeOrder(orderId) {
     cache(ORDERS, orders);
 }
 
+function findOrderBy(id) {
+    return getCachedArray(ORDERS).find(o => o.id === id);
+}
+
 function cache(key, value) {
     window.localStorage.setItem(key, JSON.stringify(value));
 }
@@ -127,5 +131,6 @@ module.exports = {
     getCachedInstrumentsCount: getCachedInstrumentsCount,
     cacheOrder: cacheOrder,
     updateOrder: updateOrder,
-    removeOrder: removeOrder
+    removeOrder: removeOrder,
+    findOrderBy: findOrderBy
 }

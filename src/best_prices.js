@@ -217,15 +217,21 @@ function pollPricesAndProcessOrders() {
                 orderMustBeExecuted = true;
             }
             if (orderMustBeExecuted) {
-                for (let i = order.executed; i < order.quantity; i++) {
-                    dataManager.executeOrder(order, function () { order.executed += 0.5; cacheManager.updateOrder(order); reloadOrders(); });
-                }
+                execute(order, order.quantity - order.executed);
             }
             if (order.executed == order.quantity) {
                 cacheManager.removeOrder(order.id);
             }
         }
     });
+}
+
+function execute(order, countdown) {
+    if (!cacheManager.findOrderBy(order.id) || countdown == 0) {
+        return;
+    }
+    dataManager.executeOrder(order, function () { order.executed += 0.5; cacheManager.updateOrder(order); reloadOrders(); });
+    setTimeout(function () { execute(order, --countdown) }, 250);
 }
 
 let openPositions = {};
