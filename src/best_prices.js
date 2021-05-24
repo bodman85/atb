@@ -189,35 +189,35 @@ function pollPricesAndProcessOrders() {
         let orders = reloadOrders();
         //process orders
         for (let order of orders) {
-            let orderMustBeExecuted = false;
+            let targetSpreadIsMet = false;
 
             if (order.targetSpreadPcnt && order.targetSpreadUsd) {
                 if (order.targetSpreadFixedInPcnt) {
                     if (order.buy === leadingInstrumentSymbol) {
                         if (deltaPcnt1 >= order.targetSpreadPcnt) {
-                            orderMustBeExecuted = true;
+                            targetSpreadIsMet = true;
                         }
                     } else if (order.buy === ledInstrumentSymbol) {
                         if (deltaPcnt2 <= order.targetSpreadPcnt) {
-                            orderMustBeExecuted = true;
+                            targetSpreadIsMet = true;
                         }
                     }
                 } else {
                     if (order.buy === leadingInstrumentSymbol) {
                         if (deltaUsd1 >= order.targetSpreadUsd) {
-                            orderMustBeExecuted = true;
+                            targetSpreadIsMet = true;
                         }
                     } else if (order.buy === ledInstrumentSymbol) {
                         if (deltaUsd2 <= order.targetSpreadUsd) {
-                            orderMustBeExecuted = true;
+                            targetSpreadIsMet = true;
                         }
                     }
                 }
             } else {
-                orderMustBeExecuted = true;
+                targetSpreadIsMet = true;
             }
-            if (orderMustBeExecuted) {
-                execute(order, order.quantity - order.executed);
+            if (targetSpreadIsMet && order.executed === 0) {
+                execute(order, order.quantity);
             }
             if (order.executed == order.quantity) {
                 cacheManager.removeOrder(order.id);
