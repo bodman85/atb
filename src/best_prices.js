@@ -248,7 +248,7 @@ function pollPositions() {
         document.getElementById("positionsDataGrid").innerHTML = '';
         document.getElementById("totalPnl").innerHTML = '';
         for (let position of openPositions) {
-            totalPnl += parseFloat(position.unRealizedProfit);
+            totalPnl += parseFloat(position.unRealizedProfit * position.markPrice);
             let row = uiUtils.createTableRow();
             row.appendChild(uiUtils.createTextColumn(position.symbol));
             row.appendChild(uiUtils.createTextColumn(position.positionAmt));
@@ -258,7 +258,7 @@ function pollPositions() {
             row.appendChild(uiUtils.createIconButtonColumn("fa-times", function () {dataManager.closePosition(position)}));
             document.getElementById("positionsDataGrid").appendChild(row);
         }
-        document.getElementById("totalPnl").innerHTML = "Total: " + parseFloat(totalPnl).toFixed(6);
+        document.getElementById("totalPnl").innerHTML = "Total: " + parseFloat(totalPnl).toFixed(2)+'$';
     });
 }
 
