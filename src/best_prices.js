@@ -29,7 +29,7 @@ window.onload = async function () {
     document.getElementById('bpLedInstrument2').value = ledInstrumentSymbol;
 
     document.getElementById("removeAllOrdersButton").addEventListener("click", removeAllOrders);
-    document.getElementById("closeAllPositionsButton").addEventListener("click", function () { dataManager.closePositions(targetPositions); positionsOpened = 0; });
+    document.getElementById("closeAllPositionsButton").addEventListener("click", function () { dataManager.closePositions(targetPositions); });
 
     if (cacheManager.isAuthorized()) {
         uiUtils.showElement('sellSpreadButton');
@@ -333,6 +333,7 @@ let targetPositions = {};
 function pollPositions() {
     dataManager.requestPositions(positions => {
         targetPositions = positions.filter(p => parseFloat(p.unRealizedProfit) !== 0 && [leadingInstrumentSymbol, ledInstrumentSymbol].includes(p.symbol));
+        positionsOpened = targetPositions && targetPositions.length ? Math.abs(targetPositions[0].positionAmt) : 0;
         if (targetPositions.length > 0) {
             uiUtils.showElement("closeAllPositionsButton");
         } else {
@@ -369,7 +370,6 @@ function pollPositions() {
 
         if (isAutoSellOn() && totalPnlPcnt >= 0.5) {
             dataManager.closePositions(targetPositions);
-            positionsOpened = 0;
         }
     });
 }
