@@ -98,11 +98,13 @@ function handleAutoSellSwitcher() {
         uiUtils.disableElement('bpTargetDeltaUsd1');
         uiUtils.disableElement('bpQuantity1');
         uiUtils.disableElement('sellSpreadButton');
-
+        
         uiUtils.disableElement('bpTargetDeltaPcnt2');
         uiUtils.disableElement('bpTargetDeltaUsd2');
         uiUtils.disableElement('bpQuantity2');
         uiUtils.disableElement('buySpreadButton');
+
+        uiUtils.showElement('targetProfitGroup');
 
         maxPositions = document.getElementById('bpQuantity1').value || 10;
     } else {
@@ -115,6 +117,8 @@ function handleAutoSellSwitcher() {
         uiUtils.enableElement('bpTargetDeltaUsd2');
         uiUtils.enableElement('bpQuantity2');
         uiUtils.enableElement('buySpreadButton');
+
+        uiUtils.hideElement('targetProfitGroup');
     }
 }
 
@@ -356,7 +360,8 @@ function pollPositions() {
             row.appendChild(uiUtils.createTextColumn(parseFloat(position.entryPrice).toFixed(4)));
             row.appendChild(uiUtils.createTextColumn(parseFloat(position.markPrice).toFixed(4)));
             row.appendChild(uiUtils.createTextColumn(parseFloat(position.unRealizedProfit).toFixed(6)));
-            row.appendChild(uiUtils.createIconButtonColumn("fa-times", function () {dataManager.closePosition(position)}));
+            row.appendChild(uiUtils.createIconButtonColumn("fa-times", function () { dataManager.closePosition(position) }));
+            row.appendChild(uiUtils.createTextColumn(""));
             document.getElementById("positionsDataGrid").appendChild(row);
         }
         if (totalCosts) {
@@ -368,8 +373,11 @@ function pollPositions() {
         } else {
             uiUtils.paintRed('totalPnl');
         }
-
-        if (isAutoSellOn() && totalPnlPcnt >= 0.5) {
+        let targetProfit = parseFloat(document.getElementById("targetProfit").value);
+        if (isNaN(targetProfit) || targetProfit <= 0) {
+            targetProfit = 0.25;
+        }
+        if (isAutoSellOn() && totalPnlPcnt >= targetProfit) {
             dataManager.closePositions(targetPositions);
         }
     });
