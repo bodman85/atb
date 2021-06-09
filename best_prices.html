@@ -7,14 +7,14 @@
 <link rel="icon" href="favicon.ico"><script defer src="best_prices.js"></script></head>
 <body>
     <div class="mb-3 d-flex justify-content-center text-secondary">
-        <h2>Bid and Ask</h2>
+        <h2>Orders and Positions</h2>
     </div>
     <form class="container-fluid form-group mb-5" id="titleGrid">
         <div class="row mb-1">
-            <div class="col">
+            <div class="col-auto">
                 <input type="text" readonly class="form-control" id="bpLeadingInstrument1">
             </div>
-            <div class="col">
+            <div class="col-auto">
                 <input type="text" readonly class="form-control" id="bpLedInstrument1">
             </div>
             <div class="col-auto mt-2">
@@ -27,7 +27,7 @@
                 <input type="text" readonly class="form-control" id="bpDeltaUsd1">
             </div>
             <div class="col-auto mt-2">
-                <label for="bpTargetDeltaPcnt1">Target spread:</label>
+                <label for="bpTargetDeltaPcnt1">Target:</label>
             </div>
             <div class="col input-group">
                 <input type="text" class="form-control text-end" id="bpTargetDeltaPcnt1">
@@ -48,14 +48,20 @@
                 <input type="text" class="form-control text-end" id="bpQuantity1" value="1" required>
             </div>
             <div class="col">
-                <button type="button" class="btn btn-secondary" id="sellSpreadButton">Sell spread</button>
+                <button type="button" class="btn btn-secondary" id="sellSpreadButton">SELL</button>
+            </div>
+            <div class="col">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="sellSpreadAutoSwitcher">
+                    <label class="form-check-label" for="sellSpreadAutoSwitcher">Auto</label>
+                </div>
             </div>
         </div>
         <div class="row">
-            <div class="col">
+            <div class="col-auto">
                 <input type="text" readonly class="form-control" id="bpLeadingInstrument2">
             </div>
-            <div class="col">
+            <div class="col-auto">
                 <input type="text" readonly class="form-control" id="bpLedInstrument2">
             </div>
             <div class="col-auto mt-2">
@@ -68,7 +74,7 @@
                 <input type="text" readonly class="form-control" id="bpDeltaUsd2">
             </div>
             <div class="col-auto mt-2">
-                <label for="bpTargetDeltaPcnt2">Target spread:</label>
+                <label for="bpTargetDeltaPcnt2">Target:</label>
             </div>
             <div class="col input-group">
                 <input type="text" class="form-control text-end" id="bpTargetDeltaPcnt2">
@@ -89,7 +95,9 @@
                 <input type="text" class="form-control text-end" id="bpQuantity2" value="1" required>
             </div>
             <div class="col">
-                <button type="button" class="btn btn-secondary" id="buySpreadButton">Buy spread</button>
+                <button type="button" class="btn btn-secondary" id="buySpreadButton">BUY</button>
+            </div>
+            <div class="col">
             </div>
         </div>
     </form>
