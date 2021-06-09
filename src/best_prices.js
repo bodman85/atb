@@ -333,7 +333,8 @@ let targetPositions = {};
 function pollPositions() {
     dataManager.requestPositions(positions => {
         targetPositions = positions.filter(p => parseFloat(p.unRealizedProfit) !== 0 && [leadingInstrumentSymbol, ledInstrumentSymbol].includes(p.symbol));
-        positionsOpened = targetPositions && targetPositions.length ? Math.abs(targetPositions[0].positionAmt) : 0;
+        let positionAmount = targetPositions && targetPositions.length ? Math.abs(targetPositions[0].positionAmt) : 0;
+        positionsOpened = positionAmount > positionsOpened ? positionAmount : positionAmount == 0 ? 0 : positionsOpened;
         if (targetPositions.length > 0) {
             uiUtils.showElement("closeAllPositionsButton");
         } else {
