@@ -1,11 +1,18 @@
 const dataManager = require("./data-manager");
 const cacheManager = require("./cache-manager");
 const uiUtils = require("./ui-utils");
+const CircularBuffer = require("circular-buffer");
 
 const urlParams = new URLSearchParams(window.location.search);
 const leadingInstrumentSymbol = urlParams.get('leadingInstrument');
 const ledInstrumentSymbol = urlParams.get('ledInstrument');
 const form = document.querySelector('form');
+
+const CIRCULAR_BUFFER_SIZE = 10;
+
+let sellSpreadSampling = new CircularBuffer(CIRCULAR_BUFFER_SIZE);
+let maxPositions = 10;
+let positionsOpened = 0;
 
 window.onload = async function () {
 
@@ -22,11 +29,13 @@ window.onload = async function () {
     document.getElementById('bpLedInstrument2').value = ledInstrumentSymbol;
 
     document.getElementById("removeAllOrdersButton").addEventListener("click", removeAllOrders);
-    document.getElementById("closeAllPositionsButton").addEventListener("click", function () { dataManager.closeAllPositions(openPositions) });
+    document.getElementById("closeAllPositionsButton").addEventListener("click", function () { dataManager.closePositions(targetPositions); positionsOpened = 0; });
 
     if (cacheManager.isAuthorized()) {
         uiUtils.showElement('sellSpreadButton');
-        document.getElementById('sellSpreadButton').addEventListener('click', placeSellSpreadOrder);
+        document.getElementById('sellSpreadButton').addEventListener('click', function () { placeSellSpreadOrder(null) });
+        uiUtils.showElement('sellSpreadAutoSwitcher');
+        document.getElementById('sellSpreadAutoSwitcher').addEventListener('click', handleAutoSellSwitcher);
         uiUtils.showElement('buySpreadButton');
         document.getElementById('buySpreadButton').addEventListener('click', placeBuySpreadOrder);
     } else {
@@ -62,25 +71,55 @@ function generateUUID() {
     );
 }
 
-function placeSellSpreadOrder() {
+function placeSellSpreadOrder(targetSpread) {
 
-    let quantity = document.getElementById('bpQuantity1').value;
+    let quantity = isAutoSellOn() ? 1 : document.getElementById('bpQuantity1').value;
     if (!quantity) {
         form.reportValidity();
     }
-
+    targetSpread ||= document.getElementById('bpTargetDeltaPcnt1').value;
     let order = {
         id: generateUUID(),
         buy: leadingInstrumentSymbol,
         sell: ledInstrumentSymbol,
         quantity: quantity,
         executed: 0,
-        targetSpreadPcnt: document.getElementById('bpTargetDeltaPcnt1').value,
+        targetSpreadPcnt: targetSpread,
         targetSpreadUsd: document.getElementById('bpTargetDeltaUsd1').value,
         targetSpreadFixedInPcnt: targetSpreadFixedInPcnt1
     }
 
     cacheManager.cacheOrder(order);
+}
+
+function handleAutoSellSwitcher() {
+    if (isAutoSellOn()) {
+        uiUtils.disableElement('bpTargetDeltaPcnt1');
+        uiUtils.disableElement('bpTargetDeltaUsd1');
+        uiUtils.disableElement('bpQuantity1');
+        uiUtils.disableElement('sellSpreadButton');
+
+        uiUtils.disableElement('bpTargetDeltaPcnt2');
+        uiUtils.disableElement('bpTargetDeltaUsd2');
+        uiUtils.disableElement('bpQuantity2');
+        uiUtils.disableElement('buySpreadButton');
+
+        maxPositions = document.getElementById('bpQuantity1').value || 10;
+    } else {
+        uiUtils.enableElement('bpTargetDeltaPcnt1');
+        uiUtils.enableElement('bpTargetDeltaUsd1');
+        uiUtils.enableElement('bpQuantity1');
+        uiUtils.enableElement('sellSpreadButton');
+
+        uiUtils.enableElement('bpTargetDeltaPcnt2');
+        uiUtils.enableElement('bpTargetDeltaUsd2');
+        uiUtils.enableElement('bpQuantity2');
+        uiUtils.enableElement('buySpreadButton');
+    }
+}
+
+function isAutoSellOn() {
+    return document.getElementById("sellSpreadAutoSwitcher").checked;
 }
 
 function placeBuySpreadOrder() {
@@ -218,12 +257,68 @@ function pollPricesAndProcessOrders() {
             }
             if (targetSpreadIsMet && order.executed === 0) {
                 execute(order, order.quantity);
+                positionsOpened++;
+            } else if (isAutoSellOn()) {
+                removeAllOrders();
+                break;
             }
             if (order.executed == order.quantity) {
                 cacheManager.removeOrder(order.id);
             }
         }
+        //Auto trading
+        sellSpreadSampling.enq(deltaPcnt1.toFixed(2));
+        placeAutoSellOrderIfApplicable(sellSpreadSampling);
     });
+}
+
+function placeAutoSellOrderIfApplicable(sellSpreadSampling) {
+    if (!isAutoSellOn() || sellSpreadSampling.size() < CIRCULAR_BUFFER_SIZE) {
+        return;
+    }
+
+    let desiredSellSpread = getProbableDesiredSellSpread(sellSpreadSampling);
+    let actualSellSpread = parseFloat(document.getElementById(`bpDeltaPcnt1`).value);
+    let sellSpreadTreshold = document.getElementById('bpTargetDeltaPcnt1').value;
+    if (desiredSellSpread < actualSellSpread || desiredSellSpread < sellSpreadTreshold || positionsOpened >= maxPositions) {
+        return;
+    }
+    placeSellSpreadOrder(desiredSellSpread);
+}
+
+function getProbableDesiredSellSpread(sellSpreadSampling) {
+    let sellSpreadProbabilities = getProbabilitiesOf(sellSpreadSampling.toarray());
+    let M = getProbableAverage(sellSpreadProbabilities);
+    let D = getDeviation(sellSpreadProbabilities, M);
+    let desiredSellSpread = M + 1.5 * D;
+    return parseFloat(desiredSellSpread).toFixed(4);
+}
+
+function getProbabilitiesOf(arr) {
+    let probabilities = {};
+    if (arr) {
+        for (let num of arr) {
+            probabilities[num] = probabilities[num] ? probabilities[num] + 1/arr.length : 1/arr.length;
+        }
+    }
+    return probabilities;
+}
+
+function getProbableAverage(probabilities) {
+    let M = 0;
+    for (let key in probabilities) {
+        M += key * probabilities[key];
+    }
+    return M;
+}
+
+function getDeviation(probabilities, M) {
+    let D = 0;
+    for (let key in probabilities) {
+        D += key * key * probabilities[key];
+    }
+    D = D - M * M;
+    return Math.sqrt(D);
 }
 
 function execute(order, countdown) {
@@ -231,24 +326,28 @@ function execute(order, countdown) {
         return;
     }
     dataManager.executeOrder(order, function () { order.executed += 0.5; cacheManager.updateOrder(order); reloadOrders(); });
-    setTimeout(function () { execute(order, --countdown) }, 250);
+    setTimeout(function () { execute(order, --countdown) }, 100);
 }
 
-let openPositions = {};
+let targetPositions = {};
 function pollPositions() {
     dataManager.requestPositions(positions => {
-        openPositions = positions.filter(p => parseFloat(p.unRealizedProfit) !== 0);
-        //console.log('Positions: ' + JSON.stringify(openPositions));
-        if (openPositions.length > 0) {
+        targetPositions = positions.filter(p => parseFloat(p.unRealizedProfit) !== 0 && [leadingInstrumentSymbol, ledInstrumentSymbol].includes(p.symbol));
+        if (targetPositions.length > 0) {
             uiUtils.showElement("closeAllPositionsButton");
         } else {
             uiUtils.hideElement("closeAllPositionsButton");
         }
-        let totalPnl = 0;
+        let totalCosts = 0;
+        let totalPnlUsd = 0;
+        let totalPnlPcnt = 0;
         document.getElementById("positionsDataGrid").innerHTML = '';
         document.getElementById("totalPnl").innerHTML = '';
-        for (let position of openPositions) {
-            totalPnl += parseFloat(position.unRealizedProfit * position.markPrice);
+        for (let position of targetPositions) {
+            totalPnlUsd += parseFloat(position.unRealizedProfit * position.markPrice);
+            if (position.unRealizedProfit < 0) {
+                totalCosts += position.markPrice * Math.abs(position.notionalValue);
+            }
             let row = uiUtils.createTableRow();
             row.appendChild(uiUtils.createTextColumn(position.symbol));
             row.appendChild(uiUtils.createTextColumn(position.positionAmt));
@@ -258,7 +357,20 @@ function pollPositions() {
             row.appendChild(uiUtils.createIconButtonColumn("fa-times", function () {dataManager.closePosition(position)}));
             document.getElementById("positionsDataGrid").appendChild(row);
         }
-        document.getElementById("totalPnl").innerHTML = "Total: " + parseFloat(totalPnl).toFixed(2)+'$';
+        if (totalCosts) {
+            totalPnlPcnt = parseFloat(totalPnlUsd / totalCosts * 100).toFixed(2);
+        }
+        document.getElementById("totalPnl").innerHTML = `Total: ${parseFloat(totalPnlUsd).toFixed(2)}$ (${totalPnlPcnt}%)`;
+        if (totalPnlUsd >= 0) {
+            uiUtils.paintGreen('totalPnl');
+        } else {
+            uiUtils.paintRed('totalPnl');
+        }
+
+        if (isAutoSellOn() && totalPnlPcnt >= 0.5) {
+            dataManager.closePositions(targetPositions);
+            positionsOpened = 0;
+        }
     });
 }
 

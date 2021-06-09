@@ -106,6 +106,8 @@ function executeOrder(order, callback) {
     sellQueryString += sign(sellQueryString);
     firePostRequestWithCallback(PLACE_ORDER + '?' + buyQueryString, callback);
     firePostRequestWithCallback(PLACE_ORDER + '?' + sellQueryString, callback);
+    //fireTestRequestWithCallback(PLACE_ORDER + '?' + buyQueryString, callback);
+    //fireTestRequestWithCallback(PLACE_ORDER + '?' + sellQueryString, callback);
 }
 
 function requestPositions(callback) {
@@ -122,7 +124,7 @@ function closePosition(position, callback) {
     firePostRequestWithCallback(PLACE_ORDER + '?' + queryString, callback);
 }
 
-function closeAllPositions(positions) {
+function closePositions(positions) {
     for (let position of positions) {
         closePosition(position);
     }
@@ -152,7 +154,7 @@ module.exports = {
     executeOrder: executeOrder,
     requestPositions: requestPositions,
     closePosition: closePosition,
-    closeAllPositions: closeAllPositions,
+    closePositions: closePositions,
     listenToAccountUpdate: listenToAccountUpdate
 }
 

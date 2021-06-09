@@ -74,6 +74,22 @@ function hideElement(id) {
     document.getElementById(id).classList.add('invisible');
 }
 
+function enableElement(id) {
+    document.getElementById(id).disabled = false;
+}
+
+function disableElement(id) {
+    document.getElementById(id).disabled = true;
+}
+
+function paintGreen(id) {
+    document.getElementById(id).style.color = 'green';
+}
+
+function paintRed(id) {
+    document.getElementById(id).style.color = 'red';
+}
+
 function createTableRow() {
     let row = document.createElement("div");
     row.classList.add('row');
@@ -117,6 +133,10 @@ module.exports = {
     clearDataGrid: clearDataGrid,
     showElement: showElement,
     hideElement: hideElement,
+    enableElement: enableElement,
+    disableElement: disableElement,
+    paintGreen: paintGreen,
+    paintRed: paintRed,
     createTableRow: createTableRow,
     createTextColumn: createTextColumn,
     createIconButtonColumn: createIconButtonColumn,
