@@ -8,7 +8,7 @@ const leadingInstrumentSymbol = urlParams.get('leadingInstrument');
 const ledInstrumentSymbol = urlParams.get('ledInstrument');
 const form = document.querySelector('form');
 
-const CIRCULAR_BUFFER_SIZE = 10;
+const CIRCULAR_BUFFER_SIZE = 100;
 
 let sellSpreadSampling = new CircularBuffer(CIRCULAR_BUFFER_SIZE);
 let maxPositions = 10;
