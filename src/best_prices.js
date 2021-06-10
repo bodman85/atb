@@ -263,7 +263,8 @@ function pollPricesAndProcessOrders() {
                 execute(order, order.quantity);
                 positionsOpened++;
             } else if (isAutoSellOn()) {
-                removeAllOrders();
+                cacheManager.removeOrdersForSymbol(leadingInstrumentSymbol);
+                cacheManager.removeOrdersForSymbol(ledInstrumentSymbol);
                 break;
             }
             if (order.executed == order.quantity) {
@@ -280,7 +281,6 @@ function placeAutoSellOrderIfApplicable(sellSpreadSampling) {
     if (!isAutoSellOn() || sellSpreadSampling.size() < CIRCULAR_BUFFER_SIZE) {
         return;
     }
-
     let desiredSellSpread = getProbableDesiredSellSpread(sellSpreadSampling);
     let actualSellSpread = parseFloat(document.getElementById(`bpDeltaPcnt1`).value);
     let sellSpreadTreshold = document.getElementById('bpTargetDeltaPcnt1').value;
