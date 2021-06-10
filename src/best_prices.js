@@ -359,6 +359,7 @@ function pollPositions() {
             row.appendChild(uiUtils.createTextColumn(position.positionAmt));
             row.appendChild(uiUtils.createTextColumn(parseFloat(position.entryPrice).toFixed(4)));
             row.appendChild(uiUtils.createTextColumn(parseFloat(position.markPrice).toFixed(4)));
+            row.appendChild(uiUtils.createTextColumn(parseFloat(position.liquidationPrice).toFixed(4)));
             row.appendChild(uiUtils.createTextColumn(parseFloat(position.unRealizedProfit).toFixed(6)));
             row.appendChild(uiUtils.createIconButtonColumn("fa-times", function () { dataManager.closePosition(position) }));
             row.appendChild(uiUtils.createTextColumn(""));
