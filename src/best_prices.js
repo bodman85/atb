@@ -98,26 +98,13 @@ function handleAutoSellSwitcher() {
         uiUtils.disableElement('bpTargetDeltaUsd1');
         uiUtils.disableElement('bpQuantity1');
         uiUtils.disableElement('sellSpreadButton');
-        
-        uiUtils.disableElement('bpTargetDeltaPcnt2');
-        uiUtils.disableElement('bpTargetDeltaUsd2');
-        uiUtils.disableElement('bpQuantity2');
-        uiUtils.disableElement('buySpreadButton');
-
         uiUtils.showElement('targetProfitGroup');
-
         maxPositions = document.getElementById('bpQuantity1').value || 10;
     } else {
         uiUtils.enableElement('bpTargetDeltaPcnt1');
         uiUtils.enableElement('bpTargetDeltaUsd1');
         uiUtils.enableElement('bpQuantity1');
         uiUtils.enableElement('sellSpreadButton');
-
-        uiUtils.enableElement('bpTargetDeltaPcnt2');
-        uiUtils.enableElement('bpTargetDeltaUsd2');
-        uiUtils.enableElement('bpQuantity2');
-        uiUtils.enableElement('buySpreadButton');
-
         uiUtils.hideElement('targetProfitGroup');
     }
 }
@@ -263,8 +250,7 @@ function pollPricesAndProcessOrders() {
                 execute(order, order.quantity);
                 positionsOpened++;
             } else if (isAutoSellOn()) {
-                cacheManager.removeOrdersForSymbol(leadingInstrumentSymbol);
-                cacheManager.removeOrdersForSymbol(ledInstrumentSymbol);
+                cacheManager.removeSellOrdersForSymbol(ledInstrumentSymbol);
                 break;
             }
             if (order.executed == order.quantity) {

@@ -45,8 +45,8 @@ function removeOrder(orderId) {
     cache(ORDERS, orders);
 }
 
-function removeOrdersForSymbol(symbol) {
-    let orders = getCachedArray(ORDERS).filter(order => order.buy != symbol && order.sell != symbol);
+function removeSellOrdersForSymbol(symbol) {
+    let orders = getCachedArray(ORDERS).filter(order => order.sell != symbol);
     cache(ORDERS, orders);
 }
 
@@ -137,6 +137,6 @@ module.exports = {
     cacheOrder: cacheOrder,
     updateOrder: updateOrder,
     removeOrder: removeOrder,
-    removeOrdersForSymbol: removeOrdersForSymbol,
+    removeSellOrdersForSymbol: removeSellOrdersForSymbol,
     findOrderBy: findOrderBy
 }
