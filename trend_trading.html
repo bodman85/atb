@@ -1,0 +1,146 @@
+<!doctype html>
+<html>
+<head>
+    <title>Trend Trading</title>
+    <link rel="stylesheet" type="text/css" href="bundle.css">
+    <script src="trend_trading.js"></script>
+<link rel="icon" href="favicon.ico"><script defer src="trend_trading.js"></script></head>
+<body>
+    <div class="mb-3 d-flex justify-content-center text-secondary">
+        <h2>Trend Trading</h2>
+    </div>
+    <form class="container-fluid form-group mb-5" id="currentPriceGrid">
+        <div class="row mb-1">
+            <div class="col-auto">
+                <input type="text" readonly class="form-control" id="ttInstrument">
+            </div>
+            <div class="col-4 input-group">
+                <input type="text" readonly class="form-control text-end" id="ttPrice">
+                <div class="input-group-append">
+                    <span class="input-group-text">$</span>
+                </div>
+            </div>
+            <div class="col-auto mt-2">
+                <label for="ttLimitPrice">Target Price: </label>
+            </div>
+            <div class="col-2">
+                <input type="text" class="form-control text-end" id="ttLimitPrice">
+            </div>
+            <div class="col-auto mt-2">
+                <label for="ttQuantity">Quantity:</label>
+            </div>
+            <div class="col-2">
+                <input type="text" class="form-control text-end" id="ttQuantity" value="1" required>
+            </div>
+            <div class="col-auto">
+                <button type="button" class="btn btn-secondary" id="buyInstrumentButton">BUY</button>
+            </div>
+            <div class="col-auto">
+                <button type="button" class="btn btn-secondary" id="sellInstrumentButton">SELL</button>
+            </div>
+            <div class="col-2">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="sellSpreadAutoSwitcher">
+                    <label class="form-check-label" for="sellSpreadAutoSwitcher">Auto</label>
+                </div>
+            </div>
+        </div>
+    </form>
+    <div class="m-3 d-flex justify-content-left text-secondary">
+        <h2>Limit Orders:</h2>
+    </div>
+    <div class="container-fluid" id="limitOrdersTitleGrid">
+        <div class="row border border-light font-bold mb-2">
+            <div class="col">
+                Id
+            </div>
+            <div class="col">
+                Symbol
+            </div>
+            <div class="col">
+                Price
+            </div>
+            <div class="col">
+                Side
+            </div>
+            <div class="col">
+                Quantity
+            </div>
+            <div class="col">
+                Executed
+            </div>
+            <div class="col">
+            </div>
+        </div>
+    </div>
+    <div class="container-fluid" id="limitOrdersDataGrid">
+    </div>
+    <div class="container-fluid" id="limitOrdersButtonGrid">
+        <div class="row mb-2">
+            <div class="col">
+            </div>
+            <div class="col">
+            </div>
+            <div class="col">
+            </div>
+            <div class="col">
+            </div>
+            <div class="col">
+            </div>
+            <div class="col">
+            </div>
+            <div class="col">
+                <button type="button" class="btn btn-secondary invisible" id="ttRemoveAllOrdersButton">Remove all</button>
+            </div>
+        </div>
+    </div>
+    <div class="m-3 d-flex justify-content-left text-secondary">
+        <h2>Open Positions:</h2>
+    </div>
+    <div class="container-fluid" id="ttPositionsTitleGrid">
+        <div class="row border border-light font-bold mb-2">
+            <div class="col">
+                Symbol
+            </div>
+            <div class="col">
+                Amount
+            </div>
+            <div class="col">
+                Entry Price
+            </div>
+            <div class="col">
+                Mark Price
+            </div>
+            <div class="col">
+                Liq. Price
+            </div>
+            <div class="col">
+                PnL
+            </div>
+            <div class="col">
+            </div>
+        </div>
+    </div>
+    <div class="container-fluid" id="ttPositionsDataGrid">
+    </div>
+    <div class="container-fluid" id="ttPpositionsButtonGrid">
+        <div class="row mb-2">
+            <div class="col">
+            </div>
+            <div class="col">
+            </div>
+            <div class="col">
+            </div>
+            <div class="col">
+            </div>
+            <div class="col">
+            </div>
+            <div class="col font-bold" id="ttTotalPnl">
+            </div>
+            <div class="col">
+                <button type="button" class="btn btn-secondary invisible" id="ttCloseAllPositionsButton">Close all</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
