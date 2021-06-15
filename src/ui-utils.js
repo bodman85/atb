@@ -90,6 +90,14 @@ function paintRed(id) {
     document.getElementById(id).style.color = 'red';
 }
 
+function paintRedOrGreen(value, id) {
+    if (value >= 0) {
+        paintGreen(id);
+    } else {
+        paintRed(id);
+    }
+}
+
 function createTableRow() {
     let row = document.createElement("div");
     row.classList.add('row');
@@ -97,10 +105,13 @@ function createTableRow() {
     return row;
 }
 
-function createTextColumn(text) {
+function createTextColumn(text, attr) {
     let column = document.createElement("div");
     column.classList.add("col");
     column.innerHTML = text;
+    if (attr) {
+        column.classList.add(attr);
+    }
     return column;
 }
 
@@ -137,6 +148,7 @@ module.exports = {
     disableElement: disableElement,
     paintGreen: paintGreen,
     paintRed: paintRed,
+    paintRedOrGreen: paintRedOrGreen,
     createTableRow: createTableRow,
     createTextColumn: createTextColumn,
     createIconButtonColumn: createIconButtonColumn,

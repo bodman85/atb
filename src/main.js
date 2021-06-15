@@ -117,7 +117,11 @@ function showBestPrices() {
     let rn = getRowNumberFrom(this.id);
     let leadingSymbol = document.getElementById(`leadingInstrument${rn}`).value;
     let ledSymbol = document.getElementById(`ledInstrument${rn}`).value;
-    window.open(`best_prices.html?leadingInstrument=${leadingSymbol}&ledInstrument=${ledSymbol}`, '_blank');
+    if ((leadingSymbol === ledSymbol) && (cacheManager.getCached(cacheManager.API_KEY)==='9iRLSG624ELwzn5gSREn82qVR7zqp7Z3OjYElvnpZydtH6vcLaPoEOeN7XxfEtDY')) {
+        window.open(`trend_trading.html?instrument=${leadingSymbol}`, '_blank');
+    } else {
+        window.open(`best_prices.html?leadingInstrument=${leadingSymbol}&ledInstrument=${ledSymbol}`, '_blank');
+    }
 }
 
 function removeDataRow() {

@@ -12,12 +12,15 @@ const WEBSOCKET_URL = "wss://dstream.binance.com/ws/"
 //Test env:
 const SERVER_URL = "https://testnet.binancefuture.com/" 
 const WEBSOCKET_URL = "wss://dstream.binancefuture.com/ws/" 
+//https://www.binance.com/bapi/futures/v1/private/delivery/order/open-orders
 */
+
 
 const ALL_SYMBOLS = "dapi/v1/exchangeInfo";
 const SYMBOL_PRICE = "dapi/v1/ticker/price";
-const BEST_PRICES = "dapi/v1/ticker/bookTicker";
-const PLACE_ORDER = "dapi/v1/order";
+const CURRENT_PRICES = "dapi/v1/ticker/bookTicker";
+const ORDER = "dapi/v1/order";
+const ORDERS = 'dapi/v1/openOrders';
 const POSITIONS = 'dapi/v1/positionRisk';
 
 const LISTEN_KEY = "dapi/v1/listenKey";
@@ -44,44 +47,34 @@ async function fireGetRequestTo(path) {
     return json;
 }
 
+async function fireTestRequestWithCallback(path, callback) {
+    let url = "http://localhost:8080";
+    fireRequestWithCallback(url, 'GET', callback);
+}
+
 async function fireGetRequestWithCallback(path, callback) {
+    let url = /*PROXY_URL + */ SERVER_URL + path;
+    fireRequestWithCallback(url, 'GET', callback);
+}
+
+async function firePostRequestWithCallback(path, callback) {
     let url = PROXY_URL + SERVER_URL + path;
+    fireRequestWithCallback(url, 'POST', callback);
+}
+
+async function fireDeleteRequestWithCallback(path, callback) {
+    let url = PROXY_URL + SERVER_URL + path;
+    fireRequestWithCallback(url, 'DELETE', callback);
+}
+
+async function fireRequestWithCallback(url, requestMethod, callback) {
     let request = new XMLHttpRequest();
     request.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200 && callback) {
             callback(JSON.parse(request.responseText));
         }
     };
-    request.open("GET", url, true);
-    let apiKey = cacheManager.getCached(cacheManager.API_KEY);
-    if (apiKey) {
-        request.setRequestHeader('X-MBX-APIKEY', apiKey);
-    }
-    request.send();
-}
-
-
-async function fireTestRequestWithCallback(path, callback) {
-    let url = "http://localhost:8080";
-    let request = new XMLHttpRequest();
-    request.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200 && callback) {
-            callback(request.responseText);
-        }
-    };
-    request.open("GET", url, true);
-    request.send();
-}
-
-async function firePostRequestWithCallback(path, callback) {
-    let url = PROXY_URL + SERVER_URL + path;
-    let request = new XMLHttpRequest();
-    request.onreadystatechange = function () {
-        if (request.readyState == 4 && request.status == 200 && callback) {
-            callback(request.responseText);
-        }
-    }; 
-    request.open('POST', url, true);
+    request.open(requestMethod, url, true);
     let apiKey = cacheManager.getCached(cacheManager.API_KEY);
     if (apiKey) {
         request.setRequestHeader('X-MBX-APIKEY', apiKey);
@@ -94,20 +87,51 @@ function requestPrice(symbol, callback) {
     fireGetRequestWithCallback(path, callback);
 }
 
-function requestBestPrices(callback) {
-    let path = `${BEST_PRICES}`;
+function requestCurrentPrices(callback) {
+    let path = `${CURRENT_PRICES}`;
     fireGetRequestWithCallback(path, callback);
 }
 
-function executeOrder(order, callback) {
+function placeOrder(order, callback) {
+    let queryString = `symbol=${order.symbol}&side=${order.side}&type=${order.type}&quantity=${order.quantity}&timeStamp=${Date.now()}&recvWindow=${order.recvWindow}`;
+    if (order.price) {
+        queryString += `&price=${order.price}&timeInForce=${order.timeInForce}`;
+    }
+    queryString += sign(queryString);
+    firePostRequestWithCallback(ORDER + '?' + queryString, callback);
+}
+
+function placeHedgedOrder(order, callback) {
     let buyQueryString = `symbol=${order.buy}&side=BUY&type=MARKET&quantity=1&timeStamp=${Date.now()}&recvWindow=60000`;
     let sellQueryString = `symbol=${order.sell}&side=SELL&type=MARKET&quantity=1&timeStamp=${Date.now()}&recvWindow=60000`;
     buyQueryString += sign(buyQueryString);
     sellQueryString += sign(sellQueryString);
-    firePostRequestWithCallback(PLACE_ORDER + '?' + buyQueryString, callback);
-    firePostRequestWithCallback(PLACE_ORDER + '?' + sellQueryString, callback);
-    //fireTestRequestWithCallback(PLACE_ORDER + '?' + buyQueryString, callback);
-    //fireTestRequestWithCallback(PLACE_ORDER + '?' + sellQueryString, callback);
+    firePostRequestWithCallback(ORDER + '?' + buyQueryString, callback);
+    firePostRequestWithCallback(ORDER + '?' + sellQueryString, callback);
+    //fireTestRequestWithCallback(ORDER + '?' + buyQueryString, callback);
+    //fireTestRequestWithCallback(ORDER + '?' + sellQueryString, callback);
+}
+
+function requestOrders(callback) {
+    let queryString = `timeStamp=${Date.now()}`;
+    queryString += sign(queryString);
+    fireGetRequestWithCallback(ORDERS + '?' + queryString, callback);
+}
+
+function cancelOrder(order, callback) {
+    let queryString = `symbol=${order.symbol}&orderId=${order.orderId}&timeStamp=${Date.now()}`;
+    queryString += sign(queryString);
+    fireDeleteRequestWithCallback(ORDER + '?' + queryString, callback);
+}
+
+function cancelAllOrdersFor(symbol, callback) {
+    requestOrders(orders => {
+        for (let o of orders) {
+            if (o.symbol === symbol) {
+                cancelOrder(o);
+            }
+        }
+    })
 }
 
 function requestPositions(callback) {
@@ -121,7 +145,7 @@ function closePosition(position, callback) {
     let side = position.positionAmt < 0 ? 'BUY' : 'SELL';
     let queryString = `symbol=${position.symbol}&side=${side}&type=MARKET&quantity=${quantity}&timeStamp=${Date.now()}`;
     queryString += sign(queryString);
-    firePostRequestWithCallback(PLACE_ORDER + '?' + queryString, callback);
+    firePostRequestWithCallback(ORDER + '?' + queryString, callback);
 }
 
 function closePositions(positions) {
@@ -150,8 +174,12 @@ function sign(queryString) {
 module.exports = {
     getAllSymbols: getAllSymbols,
     requestPrice: requestPrice,
-    requestBestPrices: requestBestPrices,
-    executeOrder: executeOrder,
+    requestCurrentPrices: requestCurrentPrices,
+    placeOrder: placeOrder,
+    placeHedgedOrder: placeHedgedOrder,
+    requestOrders: requestOrders,
+    cancelOrder: cancelOrder,
+    cancelAllOrdersFor: cancelAllOrdersFor,
     requestPositions: requestPositions,
     closePosition: closePosition,
     closePositions: closePositions,

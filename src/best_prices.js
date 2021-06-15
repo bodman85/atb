@@ -159,7 +159,7 @@ function removeAllOrders() {
 }
 
 function pollPricesAndProcessOrders() {
-    dataManager.requestBestPrices((response) => {
+    dataManager.requestCurrentPrices((response) => {
         let filteredResponse = response.filter(item => [leadingInstrumentSymbol, ledInstrumentSymbol].includes(item.symbol));
 
         //request bid and offer prices
@@ -315,7 +315,7 @@ function execute(order, countdown) {
     if (!cacheManager.findOrderBy(order.id) || countdown == 0) {
         return;
     }
-    dataManager.executeOrder(order, function () { order.executed += 0.5; cacheManager.updateOrder(order); reloadOrders(); });
+    dataManager.placeHedgedOrder(order, function () { order.executed += 0.5; cacheManager.updateOrder(order); reloadOrders(); });
     setTimeout(function () { execute(order, --countdown) }, 100);
 }
 
@@ -355,11 +355,7 @@ function pollPositions() {
             totalPnlPcnt = parseFloat(totalPnlUsd / totalCosts * 100).toFixed(2);
         }
         document.getElementById("totalPnl").innerHTML = `Total: ${parseFloat(totalPnlUsd).toFixed(2)}$ (${totalPnlPcnt}%)`;
-        if (totalPnlUsd >= 0) {
-            uiUtils.paintGreen('totalPnl');
-        } else {
-            uiUtils.paintRed('totalPnl');
-        }
+        uiUtils.paintRedOrGreen(totalPnlUsd, 'totalPnl');
         let targetProfit = parseFloat(document.getElementById("targetProfit").value);
         if (isNaN(targetProfit) || targetProfit <= 0) {
             targetProfit = 0.25;

@@ -7,6 +7,7 @@ module.exports = {
     entry: {
         main: './src/main.js',
         best_prices: './src/best_prices.js',
+        trend_trading: './src/trend_trading.js',
         bundle:
             [
                 './node_modules/bootstrap/dist/css/bootstrap.min.css',
@@ -32,6 +33,13 @@ module.exports = {
                 favicon: 'images/favicon.ico',
                 filename: 'best_prices.html',
                 chunks: ['best_prices']
+            }),
+        new HtmlWebpackPlugin(
+            {
+                template: './trend_trading.html',
+                favicon: 'images/favicon.ico',
+                filename: 'trend_trading.html',
+                chunks: ['trend_trading']
             })
     ],
     module: {
