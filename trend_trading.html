@@ -14,6 +14,9 @@
             <div class="col-auto">
                 <input type="text" readonly class="form-control" id="ttInstrument">
             </div>
+            <div class="col-auto mt-2">
+                <label for="ttPrice">Price: </label>
+            </div>
             <div class="col-4 input-group">
                 <input type="text" readonly class="form-control text-end" id="ttPrice">
                 <div class="input-group-append">
@@ -21,10 +24,13 @@
                 </div>
             </div>
             <div class="col-auto mt-2">
-                <label for="ttLimitPrice">Target Price: </label>
+                <label for="ttFutureDelta">Forecast: </label>
             </div>
-            <div class="col-2">
-                <input type="text" class="form-control text-end" id="ttLimitPrice">
+            <div class="col-4 input-group">
+                <input type="text" readonly class="form-control text-end" id="ttFutureDelta">
+                <div class="input-group-append">
+                    <span class="input-group-text">%</span>
+                </div>
             </div>
             <div class="col-auto mt-2">
                 <label for="ttQuantity">Quantity:</label>
@@ -40,16 +46,22 @@
             </div>
             <div class="col-2">
                 <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="sellSpreadAutoSwitcher">
-                    <label class="form-check-label" for="sellSpreadAutoSwitcher">Auto</label>
+                    <input class="form-check-input" type="checkbox" id="limitOrdersAutoSwitcher">
+                    <label class="form-check-label" for="limitOrdersAutoSwitcher">Limit</label>
+                </div>
+            </div>
+            <div class="col-2">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="tradeAutoSwitcher">
+                    <label class="form-check-label" for="tradeAutoSwitcher">Auto</label>
                 </div>
             </div>
         </div>
     </form>
     <div class="m-3 d-flex justify-content-left text-secondary">
-        <h2>Limit Orders:</h2>
+        <h2>Open Orders:</h2>
     </div>
-    <div class="container-fluid" id="limitOrdersTitleGrid">
+    <div class="container-fluid" id="openOrdersTitleGrid">
         <div class="row border border-light font-bold mb-2">
             <div class="col">
                 Id
@@ -73,9 +85,9 @@
             </div>
         </div>
     </div>
-    <div class="container-fluid" id="limitOrdersDataGrid">
+    <div class="container-fluid" id="openOrdersDataGrid">
     </div>
-    <div class="container-fluid" id="limitOrdersButtonGrid">
+    <div class="container-fluid" id="openOrdersButtonGrid">
         <div class="row mb-2">
             <div class="col">
             </div>
@@ -138,7 +150,6 @@
             <div class="col font-bold" id="ttTotalPnl">
             </div>
             <div class="col">
-                <button type="button" class="btn btn-secondary invisible" id="ttCloseAllPositionsButton">Close all</button>
             </div>
         </div>
     </div>
