@@ -12,7 +12,6 @@ const WEBSOCKET_URL = "wss://dstream.binance.com/ws/"
 //Test env:
 const SERVER_URL = "https://testnet.binancefuture.com/" 
 const WEBSOCKET_URL = "wss://dstream.binancefuture.com/ws/" 
-//https://www.binance.com/bapi/futures/v1/private/delivery/order/open-orders
 */
 
 
@@ -94,7 +93,7 @@ function requestCurrentPrices(callback) {
 
 function placeOrder(order, callback) {
     let queryString = `symbol=${order.symbol}&side=${order.side}&type=${order.type}&quantity=${order.quantity}&timeStamp=${Date.now()}&recvWindow=${order.recvWindow}`;
-    if (order.price) {
+    if (order.type.toUpperCase() === 'LIMIT') {
         queryString += `&price=${order.price}&timeInForce=${order.timeInForce}`;
     }
     queryString += sign(queryString);
@@ -165,6 +164,30 @@ function logAccountUpdate(listenKey) {
     };
 }
 
+function pollPriceTickerFor(symbol, callback) {
+    const ws = new W3CWebSocket(`${WEBSOCKET_URL}${symbol.toLowerCase()}@ticker`);
+    ws.onmessage = function (e) {
+        let ticker = JSON.parse(e.data);
+        callback(ticker);
+    };
+}
+
+function pollBookTickerFor(symbol, callback) {
+    const ws = new W3CWebSocket(`${WEBSOCKET_URL}${symbol.toLowerCase()}@bookTicker`);
+    ws.onmessage = function (e) {
+        let ticker = JSON.parse(e.data);
+        callback(ticker);
+    };
+}
+
+function pollDepthFor(symbol, callback) {
+    const ws = new W3CWebSocket(`${WEBSOCKET_URL}${symbol.toLowerCase()}@depth20`);
+    ws.onmessage = function (e) {
+        let data = JSON.parse(e.data);
+        callback(data);
+    };
+}
+
 function sign(queryString) {
     let secretKey = cacheManager.getCached(cacheManager.SECRET_KEY);
     let signature = CryptoJS.HmacSHA256(queryString, secretKey).toString(CryptoJS.enc.Hex)
@@ -183,7 +206,10 @@ module.exports = {
     requestPositions: requestPositions,
     closePosition: closePosition,
     closePositions: closePositions,
-    listenToAccountUpdate: listenToAccountUpdate
+    listenToAccountUpdate: listenToAccountUpdate,
+    pollPriceTickerFor: pollPriceTickerFor,
+    pollBookTickerFor: pollBookTickerFor,
+    pollDepthFor: pollDepthFor
 }
 
 

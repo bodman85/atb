@@ -12,7 +12,7 @@ window.onload = async function () {
     document.getElementById("logoutLink").addEventListener("click", logout);
     document.getElementById("addNewPairButton").addEventListener("click", function () { addDataRow(cacheManager.cacheInstrumentsDataRow); });
     document.getElementById("removeAllButton").addEventListener("click", removeAllDataRows);
-    setInterval(pollPricesAndRecomputeDeltas, 1000);
+    setInterval(pollPricesAndRecomputeDeltas, 3000);
 }
 
 async function reloadState() {

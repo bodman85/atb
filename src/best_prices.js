@@ -43,9 +43,8 @@ window.onload = async function () {
         uiUtils.hideElement('buySpreadButton');
     }
 
-    setInterval(pollPricesAndProcessOrders, 1000);
-    dataManager.listenToAccountUpdate();
-    setInterval(pollPositions, 1000);
+    setInterval(pollPricesAndProcessOrders, 3000);
+    setInterval(pollPositions, 3000);
 }
 
 let targetSpreadFixedInPcnt1 = true;
