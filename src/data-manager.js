@@ -52,7 +52,7 @@ async function fireTestRequestWithCallback(path, callback) {
 }
 
 async function fireGetRequestWithCallback(path, callback) {
-    let url = /*PROXY_URL + */ SERVER_URL + path;
+    let url = PROXY_URL + SERVER_URL + path;
     fireRequestWithCallback(url, 'GET', callback);
 }
 

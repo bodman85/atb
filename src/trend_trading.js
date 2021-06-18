@@ -1,9 +1,19 @@
 const dataManager = require("./data-manager");
 const uiUtils = require("./ui-utils");
+const CircularBuffer = require("circular-buffer");
+
+const PREDICTION_BUFFER_SIZE = 10;
+const TREND_BUFFER_SIZE = 3;
+
+let PRICE_PREDICTIONS = new CircularBuffer(PREDICTION_BUFFER_SIZE);
+let PRICE_TREND = new CircularBuffer(TREND_BUFFER_SIZE);//0.0025
 
 const urlParams = new URLSearchParams(window.location.search);
 const instrumentSymbol = urlParams.get('instrument');
 
+let previousPrice;
+let currentPrice;
+let currentPosition = {};
 let bookTicker = {};
 
 window.onload = async function () {
@@ -15,7 +25,16 @@ window.onload = async function () {
     setInterval(pollPositions, 3000);
 
     dataManager.pollPriceTickerFor(instrumentSymbol, ticker => {
-        document.getElementById('ttPrice').value = ticker['c'];
+        previousPrice = currentPrice;
+        currentPrice = ticker['c'];
+        document.getElementById('ttPrice').value = currentPrice;
+        let currentDelta = parseFloat((currentPrice - previousPrice) / previousPrice * 100).toFixed(4);
+        PRICE_TREND.enq(currentDelta);
+        let priceTrend = getPriceTrend();
+        document.getElementById('priceTrend').value = priceTrend > 0 ? 'ASC' : priceTrend < 0 ? 'DESC' : 'FLAT';
+        uiUtils.paintRedOrGreen(priceTrend, 'priceTrend');
+
+        displayPnlFor(currentPosition);
     });
 
     dataManager.pollBookTickerFor(instrumentSymbol, ticker => {
@@ -23,15 +42,32 @@ window.onload = async function () {
     });
 
     dataManager.pollDepthFor(instrumentSymbol, data => {
-        let predictedPrice = predictPrice(data);
+        let fairPrice = computeFairPrice(data);
         let currentPrice = document.getElementById('ttPrice').value;
-        let futureDelta = parseFloat((predictedPrice - currentPrice) / currentPrice * 100).toFixed(4);
-        document.getElementById('ttFutureDelta').value = futureDelta;
-        uiUtils.paintRedOrGreen(futureDelta, 'ttFutureDelta');
+        let futureDelta = parseFloat((fairPrice - currentPrice) / currentPrice * 100).toFixed(4);
+        PRICE_PREDICTIONS.enq(futureDelta);
+        let priceForecast = getPriceForecast();
+        document.getElementById('priceForecast').value = priceForecast > 0 ? 'UP' : priceForecast < 0 ? 'DOWN' : '???';
+        uiUtils.paintRedOrGreen(priceForecast, 'priceForecast');
     });
 }
 
-function predictPrice(data) {
+function getPriceTrend() {
+    let accu = 0;
+    let ptArray = PRICE_TREND.toarray();
+    for (let p of ptArray) {
+        accu += parseFloat(p);
+    }
+    if (accu >= 0.0025) {
+        return 1;
+    } else if (accu <= -0.0025) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
+function computeFairPrice(data) {
     let asks = data['a'];
     let askOrders = 0;
     let askVolume = 0;
@@ -46,8 +82,23 @@ function predictPrice(data) {
         bidOrders += parseInt(b[1]);
         bidVolume += b[0] * b[1];
     }
-    let predictedPrice = parseFloat((askVolume + bidVolume) / (askOrders + bidOrders)).toFixed(2);
-    return predictedPrice;
+    return parseFloat((askVolume + bidVolume) / (askOrders + bidOrders)).toFixed(2);
+}
+
+function getPriceForecast() {
+    let accu = 0;
+    let ppArray = PRICE_PREDICTIONS.toarray();
+    for (let p of ppArray) {
+        if (Math.sign(ppArray[0]) != Math.sign(p)) {
+            return 0;
+        }
+        accu += parseFloat(p);
+    }
+    if (accu >= 0.025) {
+        return 1;
+    } else if (accu <= -0.025) {
+        return -1;
+    } else return 0;
 }
 
 function placeBuyOrder() {
@@ -116,16 +167,11 @@ function pollOrders() {
 function pollPositions() {
     dataManager.requestPositions(positions => {
         let targetPositions = positions.filter(p => parseFloat(p.unRealizedProfit) !== 0 && instrumentSymbol === p.symbol);
-        let totalCosts = 0;
-        let totalPnlUsd = 0;
-        let totalPnlPcnt = 0;
         document.getElementById("ttPositionsDataGrid").innerHTML = '';
-        document.getElementById("ttTotalPnl").innerHTML = '';
         for (let position of targetPositions) {
-            totalPnlUsd += parseFloat(position.unRealizedProfit * position.markPrice);
-            if (position.unRealizedProfit < 0) {
-                totalCosts += position.markPrice * Math.abs(position.notionalValue);
-            }
+            currentPosition = position;
+//            const { markPrice, ...partialPosition } = position; copy all fields except markPrice
+//            Object.assign(currentPosition, partialPosition);
             let row = uiUtils.createTableRow();
             row.appendChild(uiUtils.createTextColumn(position.symbol));
             row.appendChild(uiUtils.createTextColumn(position.positionAmt));
@@ -136,10 +182,23 @@ function pollPositions() {
             row.appendChild(uiUtils.createIconButtonColumn("fa-times", function () { dataManager.closePosition(position) }));
             document.getElementById("ttPositionsDataGrid").appendChild(row);
         }
-        if (totalCosts) {
-            totalPnlPcnt = parseFloat(totalPnlUsd / totalCosts * 100).toFixed(2);
-        }
-        document.getElementById("ttTotalPnl").innerHTML = `Total \u2248 ${parseFloat(totalPnlUsd).toFixed(2)}$ (${totalPnlPcnt}%)`;
-        uiUtils.paintRedOrGreen(totalPnlUsd, 'ttTotalPnl');
     });
+}
+
+function calculatePnlUsdFor(position) {
+    return parseFloat((currentPrice - position.entryPrice) * position.notionalValue).toFixed(2);
+}
+
+function calculatePnlPcntFor(position) {
+    let totalCosts = position.entryPrice * Math.abs(position.notionalValue);
+    return parseFloat(calculatePnlUsdFor(position) / totalCosts * 100).toFixed(2);
+}
+
+function displayPnlFor(position) {
+    let pnlUsd = calculatePnlUsdFor(position);
+    pnlUsd = isNaN(pnlUsd) ? 0 : pnlUsd;
+    let pnlPcnt = calculatePnlPcntFor(position);
+    pnlPcnt = isNaN(pnlPcnt) ? 0 : pnlPcnt;
+    document.getElementById("ttTotalPnl").innerHTML = `Total \u2248 ${pnlUsd}$ (${pnlPcnt}%)`;
+    uiUtils.paintRedOrGreen(pnlUsd, 'ttTotalPnl');
 }
