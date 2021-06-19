@@ -3,7 +3,7 @@ const uiUtils = require("./ui-utils");
 const CircularBuffer = require("circular-buffer");
 
 const PREDICTION_BUFFER_SIZE = 10;
-const TREND_BUFFER_SIZE = 3;
+const TREND_BUFFER_SIZE = 5;
 
 let PRICE_PREDICTIONS = new CircularBuffer(PREDICTION_BUFFER_SIZE);
 let PRICE_TREND = new CircularBuffer(TREND_BUFFER_SIZE);//0.0025
@@ -92,15 +92,13 @@ function autoTrade() {
         let pnlPcnt = calculatePnlPcntFor(currentPosition);
         let pnlUsd = calculatePnlUsdFor(currentPosition);
         if (currentPositionAmount > 0) {        //long position is opened
-            if ((trend === -1 && pnlPcnt < -0.025) ||
-                (trend === 0 && pnlPcnt > 0.025)) {
+            if (trend === -1 || (trend === 0 && pnlPcnt > 0.03)) {
                 placeSellOrder();
                 currentPositionAmount = 0;
                 autoTradePnl = isNaN(pnlUsd) ? autoTradePnl : autoTradePnl + pnlUsd;
             }
         } else if (currentPositionAmount < 0) { //short position is opened
-            if ((trend === 1 && pnlPcnt < -0.025) ||
-                (trend === 0 && pnlPcnt > 0.025)) {
+            if (trend === 1 || (trend === 0 && pnlPcnt > 0.03)) {
                 placeBuyOrder();
                 currentPositionAmount = 0;
                 autoTradePnl = isNaN(pnlUsd) ? autoTradePnl : autoTradePnl + pnlUsd;
@@ -155,9 +153,9 @@ function getPriceForecast() {
         }
         accu += p;
     }
-    if (accu >= 0.025) {
+    if (accu >= 0.0275) {
         return 1;
-    } else if (accu <= -0.025) {
+    } else if (accu <= -0.0275) {
         return -1;
     } else return 0;
 }
