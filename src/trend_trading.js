@@ -79,29 +79,31 @@ function handleTradeAutoSwitcher() {
 
 function autoTrade() {
     if (currentPositionAmount === 0) {
-        if (getPriceForecast() == 1) {
+        let trend = getPriceTrend();
+        if (getPriceForecast() == 1 && trend >=0 ) {
             placeBuyOrder();
             currentPositionAmount = parseInt(document.getElementById('ttQuantity').value);
-        } else if (getPriceForecast() == -1) {
+        } else if (getPriceForecast() == -1 && trend <= 0) {
             placeSellOrder();
             currentPositionAmount = -parseInt(document.getElementById('ttQuantity').value);
         }
     } else {
         let trend = getPriceTrend();
-        let pnl = calculatePnlUsdFor(currentPosition);
+        let pnlPcnt = calculatePnlPcntFor(currentPosition);
+        let pnlUsd = calculatePnlUsdFor(currentPosition);
         if (currentPositionAmount > 0) {        //long position is opened
-            if ((trend === -1) ||
-                (trend === 0 && pnl > 0)) {
+            if ((trend === -1 && pnlPcnt < -0.025) ||
+                (trend === 0 && pnlPcnt > 0.025)) {
                 placeSellOrder();
                 currentPositionAmount = 0;
-                autoTradePnl = isNaN(pnl) ? autoTradePnl : autoTradePnl + pnl;
+                autoTradePnl = isNaN(pnlUsd) ? autoTradePnl : autoTradePnl + pnlUsd;
             }
         } else if (currentPositionAmount < 0) { //short position is opened
-            if ((trend === 1) ||
-                (trend === 0 && pnl > 0)) {
+            if ((trend === 1 && pnlPcnt < -0.025) ||
+                (trend === 0 && pnlPcnt > 0.025)) {
                 placeBuyOrder();
                 currentPositionAmount = 0;
-                autoTradePnl = isNaN(pnl) ? autoTradePnl : autoTradePnl + pnl;
+                autoTradePnl = isNaN(pnlUsd) ? autoTradePnl : autoTradePnl + pnlUsd;
             }
         }
     }
@@ -255,7 +257,7 @@ function calculatePnlUsdFor(position) {
 
 function calculatePnlPcntFor(position) {
     let totalCosts = position.entryPrice * Math.abs(position.notionalValue);
-    return parseFloat(calculatePnlUsdFor(position) / totalCosts * 100).toFixed(2);
+    return parseFloat(calculatePnlUsdFor(position) / totalCosts * 100);
 }
 
 function displayPnlFor(position) {
@@ -263,7 +265,7 @@ function displayPnlFor(position) {
     pnlUsd = isNaN(pnlUsd) ? 0 : pnlUsd;
     let pnlPcnt = calculatePnlPcntFor(position);
     pnlPcnt = isNaN(pnlPcnt) ? 0 : pnlPcnt;
-    document.getElementById("ttTotalPnl").innerHTML = `Total \u2248 ${pnlUsd.toFixed(2)}$ (${pnlPcnt}%)`;
+    document.getElementById("ttTotalPnl").innerHTML = `Total \u2248 ${pnlUsd.toFixed(2)}$ (${pnlPcnt.toFixed(2)}%)`;
     uiUtils.paintRedOrGreen(pnlUsd, 'ttTotalPnl');
 }
 
