@@ -18,6 +18,7 @@ let currentAskPrice;
 let autoTradePnl = 0;
 let currentPositionAmount = 0;
 let currentPosition = {};
+let priceTrendLastUpdated = 0;
 
 window.onload = async function () {
     document.getElementById('ttInstrument').value = instrumentSymbol;
@@ -32,8 +33,9 @@ window.onload = async function () {
         previousPrice = currentPrice;
         currentPrice = ticker['c'];
         document.getElementById('ttPrice').value = currentPrice;
-        let currentDelta = parseFloat((currentPrice - previousPrice) / previousPrice * 100).toFixed(4);
+        let currentDelta = parseFloat((currentPrice - previousPrice) / previousPrice * 100);
         PRICE_TREND.enq(currentDelta);
+        priceTrendLastUpdated = Date.now();
         let priceTrend = getPriceTrend();
         document.getElementById('priceTrend').value = priceTrend > 0 ? 'ASC' : priceTrend < 0 ? 'DESC' : 'FLAT';
         uiUtils.paintRedOrGreen(priceTrend, 'priceTrend');
@@ -54,7 +56,7 @@ window.onload = async function () {
     dataManager.pollDepthFor(instrumentSymbol, data => {
         let fairPrice = computeFairPrice(data);
         let currentPrice = document.getElementById('ttPrice').value;
-        let futureDelta = parseFloat((fairPrice - currentPrice) / currentPrice * 100).toFixed(4);
+        let futureDelta = parseFloat((fairPrice - currentPrice) / currentPrice * 100);
         PRICE_PREDICTIONS.enq(futureDelta);
         let priceForecast = getPriceForecast();
         document.getElementById('priceForecast').value = priceForecast > 0 ? 'UP' : priceForecast < 0 ? 'DOWN' : '???';
@@ -102,10 +104,14 @@ function autoTrade() {
 }
 
 function getPriceTrend() {
+    if (Date.now() - priceTrendLastUpdated > 1000) { 
+        return 0;
+    }
+
     let accu = 0;
     let ptArray = PRICE_TREND.toarray();
     for (let p of ptArray) {
-        accu += parseFloat(p);
+        accu += p;
     }
     if (accu >= 0.0025) {
         return 1;
@@ -141,7 +147,7 @@ function getPriceForecast() {
         if (Math.sign(ppArray[0]) != Math.sign(p)) {
             return 0;
         }
-        accu += parseFloat(p);
+        accu += p;
     }
     if (accu >= 0.025) {
         return 1;
@@ -222,7 +228,6 @@ function pollPositions() {
         }
         for (let position of targetPositions) {
             currentPosition = position;
-            currentPositionAmount = position.positionAmt;
             displayPosition(position);
         }
     });
