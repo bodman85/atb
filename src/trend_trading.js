@@ -67,8 +67,12 @@ window.onload = async function () {
 function handleTradeAutoSwitcher() {
     if (document.getElementById("tradeAutoSwitcher").checked) {
         uiUtils.disableElement('ttQuantity');
+        uiUtils.disableElement('buyInstrumentButton');
+        uiUtils.disableElement('sellInstrumentButton');
     } else {
         uiUtils.enableElement('ttQuantity');
+        uiUtils.enableElement('buyInstrumentButton');
+        uiUtils.enableElement('sellInstrumentButton');
         autoTradePnl = 0;
     }
 }
