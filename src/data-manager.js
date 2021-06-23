@@ -4,10 +4,10 @@ const W3CWebSocket = require('websocket').w3cwebsocket;
 
 const PROXY_URL = "https://atb-proxy.herokuapp.com/";
 
-
 //Prod env:
 const SERVER_URL = "https://dapi.binance.com/"
 const WEBSOCKET_URL = "wss://dstream.binance.com/ws/"
+//const USER_DATA_STREAM_URL = "wss://stream.binance.com:9443/ws/"
 /*
 //Test env:
 const SERVER_URL = "https://testnet.binancefuture.com/" 
@@ -59,6 +59,11 @@ async function fireGetRequestWithCallback(path, callback) {
 async function firePostRequestWithCallback(path, callback) {
     let url = PROXY_URL + SERVER_URL + path;
     fireRequestWithCallback(url, 'POST', callback);
+}
+
+async function firePutRequestWithCallback(path, callback) {
+    let url = PROXY_URL + SERVER_URL + path;
+    fireRequestWithCallback(url, 'PUT', callback);
 }
 
 async function fireDeleteRequestWithCallback(path, callback) {
@@ -127,7 +132,7 @@ function cancelAllOrdersFor(symbol, callback) {
     requestOrders(orders => {
         for (let o of orders) {
             if (o.symbol === symbol) {
-                cancelOrder(o);
+                cancelOrder(o, callback);
             }
         }
     })
@@ -151,17 +156,6 @@ function closePositions(positions) {
     for (let position of positions) {
         closePosition(position);
     }
-}
-
-function listenToAccountUpdate() {
-    firePostRequestWithCallback(LISTEN_KEY, logAccountUpdate);
-}
-
-function logAccountUpdate(listenKey) {
-    const client = new W3CWebSocket(WEBSOCKET_URL + listenKey);
-    client.onmessage = function (e) {
-        console.log(JSON.stringify(e.data));
-    };
 }
 
 function pollPriceTickerFor(symbol, callback) {
@@ -188,10 +182,29 @@ function pollDepthFor(symbol, callback) {
     };
 }
 
+function pollUserDataStream(callback) {
+    firePostRequestWithCallback(LISTEN_KEY, function (resp) {
+        //console.log(resp.listenKey);
+        const ws = new W3CWebSocket(`${WEBSOCKET_URL}${resp.listenKey}`);
+        ws.onmessage = function (e) {
+            let data = JSON.parse(e.data);
+            callback(data);
+        };
+    });
+}
+
+function refreshListenKey() {
+    firePutRequestWithCallback(LISTEN_KEY);
+}
+
 function sign(queryString) {
     let secretKey = cacheManager.getCached(cacheManager.SECRET_KEY);
     let signature = CryptoJS.HmacSHA256(queryString, secretKey).toString(CryptoJS.enc.Hex)
     return `&signature=${signature}`;
+}
+
+function isEmpty(obj) {
+    return Object.keys(obj).length === 0;
 }
 
 module.exports = {
@@ -206,10 +219,12 @@ module.exports = {
     requestPositions: requestPositions,
     closePosition: closePosition,
     closePositions: closePositions,
-    listenToAccountUpdate: listenToAccountUpdate,
     pollPriceTickerFor: pollPriceTickerFor,
     pollBookTickerFor: pollBookTickerFor,
-    pollDepthFor: pollDepthFor
+    pollDepthFor: pollDepthFor,
+    pollUserDataStream: pollUserDataStream,
+    refreshListenKey: refreshListenKey,
+    isEmpty: isEmpty
 }
 
 

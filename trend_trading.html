@@ -1,13 +1,13 @@
 <!doctype html>
 <html>
 <head>
-    <title>Trend Trading</title>
+    <title>In-Trend Trading</title>
     <link rel="stylesheet" type="text/css" href="bundle.css">
     <script src="trend_trading.js"></script>
 </head>
 <body>
     <div class="mb-3 d-flex justify-content-center text-secondary">
-        <h2>Trend Trading</h2>
+        <h2>In-Trend Trading</h2>
     </div>
     <form class="container-fluid form-group mb-5" id="currentPriceGrid">
         <div class="row mb-1">
@@ -49,7 +49,7 @@
             </div>
             <div class="col-2">
                 <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="limitOrdersAutoSwitcher">
+                    <input class="form-check-input" type="checkbox" id="limitOrdersAutoSwitcher" checked="checked">
                     <label class="form-check-label" for="limitOrdersAutoSwitcher">Limit</label>
                 </div>
             </div>
@@ -110,7 +110,7 @@
         </div>
     </div>
     <div class="m-3 d-flex justify-content-left text-secondary">
-        <h2>Open Positions:</h2>
+        <h2>Open Position:</h2>
     </div>
     <div class="container-fluid" id="ttPositionsTitleGrid">
         <div class="row border border-light font-bold mb-2">
@@ -124,13 +124,7 @@
                 Entry Price
             </div>
             <div class="col">
-                Mark Price
-            </div>
-            <div class="col">
-                Liq. Price
-            </div>
-            <div class="col">
-                PnL
+                PnL, %
             </div>
             <div class="col">
             </div>
@@ -140,10 +134,6 @@
     </div>
     <div class="container-fluid" id="ttPpositionsButtonGrid">
         <div class="row mb-2">
-            <div class="col">
-            </div>
-            <div class="col">
-            </div>
             <div class="col">
             </div>
             <div class="col">
