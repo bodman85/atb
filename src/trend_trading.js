@@ -5,33 +5,26 @@ const CircularBuffer = require("circular-buffer");
 const urlParams = new URLSearchParams(window.location.search);
 const instrumentSymbol = urlParams.get('instrument');
 
-const TREND_BUFFER_SIZE = 3;
 const FORECAST_BUFFER_SIZE = 10;
-const LIMIT_ORDER_FEE_PCNT = 0.01;
+const TREND_BUFFER_SIZE = 500;
 
-const TREND_DELTA_EDGE_VALUE = 0.02;
-const FORECAST_DELTA_EDGE_VALUE = 0.15;
+const FORECAST_DELTA_EDGE_VALUE = 0.1;
+const TREND_INDICATOR_DELTA = 0.2;
+
 const TARGET_PROFIT = 0.04;
-
+const LIMIT_ORDER_FEE_PCNT = 0.01;
 const LIMIT_ORDER_PENDING_TIME = 1000;
-const TREND_VALID_TIME = 2000;
 
 let FAIR_PRICE_DELTAS = new CircularBuffer(FORECAST_BUFFER_SIZE);
-let PREVIOUS_PRICE_DELTAS = new CircularBuffer(TREND_BUFFER_SIZE);
-let PRICE_TICKERS = new CircularBuffer(100);
+let PRICE_TICKERS = new CircularBuffer(TREND_BUFFER_SIZE);
 
-let previousPrice = 0;
 let currentPrice = 0;
-
-let priceLastUpdated = Date.now();
-let orderLastPlaced = Date.now();
-
 let currentBidPrice = 0;
 let currentAskPrice = 0;
-
-let currentPosition = {};
 let totalPnlPcnt = 0;
 
+let orderLastPlaced = Date.now();
+let currentPosition = {};
 
 
 window.onload = async function () {
@@ -43,11 +36,9 @@ window.onload = async function () {
     initCurrentPosition();
     setInterval(pollOrders, 2000);
     setInterval(displayCurrentPosition, 1000);
-    setInterval(dataManager.refreshListenKey, 300000);
 
-    dataManager.pollUserDataStream(function (stream) {
-        processUserDataStream(stream);
-    });
+    setInterval(function () { dataManager.pollUserDataStream(function (stream) { processUserDataStream(stream); }) }, 1200000);
+    //setInterval(dataManager.refreshListenKey, 300000);
 
     dataManager.pollPriceTickerFor(instrumentSymbol, ticker => {
         previousPrice = currentPrice;
@@ -61,9 +52,6 @@ window.onload = async function () {
 
         priceLastUpdated = Date.now();
         document.getElementById('ttPrice').value = currentPrice;
-
-        let previousPriceDelta = previousPrice ? parseFloat((currentPrice - previousPrice) / previousPrice * 100) : 0;
-        PREVIOUS_PRICE_DELTAS.enq(previousPriceDelta);
     });
 
     dataManager.pollBookTickerFor(instrumentSymbol, ticker => {
@@ -75,15 +63,14 @@ window.onload = async function () {
     });
 
     dataManager.pollDepthFor(instrumentSymbol, data => {
-        let priceTrend = getPriceTrend();
-        document.getElementById('priceTrend').value = priceTrend > TREND_DELTA_EDGE_VALUE ? 'ASC' : priceTrend < -TREND_DELTA_EDGE_VALUE ? 'DESC' : 'FLAT';
+        let priceTrend = getGeneralPriceTrend();
+        document.getElementById('priceTrend').value = priceTrend > TREND_INDICATOR_DELTA ? 'ASC' : priceTrend < -TREND_INDICATOR_DELTA ? 'DESC' : 'FLAT';
         uiUtils.paintRedOrGreen(priceTrend, 'priceTrend');
 
         let fairPriceDelta = parseFloat((computeFairPrice(data) - currentPrice) / currentPrice * 100);
         FAIR_PRICE_DELTAS.enq(fairPriceDelta);
 
         let priceForecast = getPriceForecastBasedOnBidAskRatio();
-        //getPriceForecastBasedOnAveragePrice();
 
         document.getElementById('priceForecast').value = (priceForecast > FORECAST_DELTA_EDGE_VALUE) ? 'UP' : (priceForecast < -FORECAST_DELTA_EDGE_VALUE) ? 'DOWN' : '???';
         uiUtils.paintRedOrGreen(priceForecast, 'priceForecast');
@@ -91,23 +78,24 @@ window.onload = async function () {
 }
 
 function autoTrade() {
-    let trend = getPriceTrend();
+    let generalTrend = getGeneralPriceTrend();
+    let momentTrend = getMomentPriceTrend();
     let forecast = getPriceForecastBasedOnBidAskRatio();
     if (!hasAmount(currentPosition)) { // No position
-        if (trend > 0 && isUp(forecast)) {
+        if (isAsc(generalTrend) && momentTrend > 0 && isUp(forecast)) {
             placeBuyOrder();
-        } else if (trend < 0 && isDown(forecast)) {
+        } else if (isDesc(generalTrend) && momentTrend < 0 && isDown(forecast)) {
             placeSellOrder();
         }
     } else { // position exists
         if (currentPosition.positionAmt > 0) { //long position
-            if (isDesc(trend) && isDown(forecast) || currentPosition.unRealizedProfit < -TARGET_PROFIT*2.5) {
+            if (currentPosition.unRealizedProfit < -TARGET_PROFIT * 10) {
                 placeSellOrder(); // Stop Loss
             } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.1) {
                 placeSellOrder(); // Backup Take Profit
             }
         } else if (currentPosition.positionAmt < 0) { //short position
-            if (isAsc(trend) && isUp(forecast) ||currentPosition.unRealizedProfit < -TARGET_PROFIT*2.5) {
+            if (currentPosition.unRealizedProfit < -TARGET_PROFIT * 10) {
                 placeBuyOrder(); // Stop Loss
             } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.1) {
                 placeBuyOrder(); // Backup Take Profit
@@ -117,23 +105,15 @@ function autoTrade() {
 }
 
 function isDesc(trend) {
-    return trend < -TREND_DELTA_EDGE_VALUE;
-}
-
-function isFlat(trend) {
-    return trend >= -TREND_DELTA_EDGE_VALUE && trend <= TREND_DELTA_EDGE_VALUE;
+    return trend < -TREND_INDICATOR_DELTA;
 }
 
 function isAsc(trend) {
-    return trend > TREND_DELTA_EDGE_VALUE;
+    return trend > TREND_INDICATOR_DELTA;
 }
 
 function isDown(forecast) {
     return forecast < -FORECAST_DELTA_EDGE_VALUE;
-}
-
-function isUndefined(forecast) {
-    return forecast >= -FORECAST_DELTA_EDGE_VALUE && forecast <= FORECAST_DELTA_EDGE_VALUE;
 }
 
 function isUp(forecast) {
@@ -173,7 +153,7 @@ function placeStopOrderFor(position) {
 function initCurrentPosition() {
     dataManager.requestPositions(positions => {
         let targetPositions = positions.filter(p => parseFloat(p.unRealizedProfit) !== 0 && instrumentSymbol === p.symbol);
-        if (targetPositions.length === 0) {
+        if (targetPositions.length == 0) {
             currentPosition = {};
         } else {
             let position = targetPositions[0];
@@ -233,43 +213,34 @@ function getPriceForecastBasedOnBidAskRatio() {
     return accu;
 }
 
-function getPriceForecastBasedOnAveragePrice() {
-    let accu = 0;
+function getMomentPriceTrend() {
     let ptArray = PRICE_TICKERS.toarray();
-    for (let p of ptArray) {
-        accu += parseFloat(p);
-    }
-    let avgPrice = accu / ptArray.length;
-    let avgPriceDelta = (avgPrice - currentPrice) / currentPrice * 100;
-    //console.log(`Average price delta: ${avgPriceDelta}`);
-    return avgPriceDelta;
+    let first = ptArray[4];
+    let last = ptArray[0];
+    let trend = (last - first) / first * 100;
+    //console.log(`Moment trend: ${trend}`);
+    return trend;
 }
 
-function getPriceTrend() {
-    let accu = 0;
-    let ptArray = PREVIOUS_PRICE_DELTAS.toarray();
-    if (Date.now() - priceLastUpdated > TREND_VALID_TIME) {
-        return 0;
-    }
-    for (let p of ptArray) {
-        //if (Math.sign(ptArray[0]) != Math.sign(p)) {
-        //    return 0;
-        //}
-        accu += p;
-    }
-    return accu;
+function getGeneralPriceTrend() {
+    let ptArray = PRICE_TICKERS.toarray();
+    let first = ptArray[ptArray.length - 1];
+    let last = ptArray[0];
+    let trend = (last - first) / first * 100;
+    //console.log(`General trend: ${trend}`);
+    return trend;
 }
 
 function handleTradeAutoSwitcher() {
     if (document.getElementById("tradeAutoSwitcher").checked) {
         uiUtils.disableElement('ttQuantity');
-        uiUtils.disableElement('buyInstrumentButton');
-        uiUtils.disableElement('sellInstrumentButton');
+        //uiUtils.disableElement('buyInstrumentButton');
+        //uiUtils.disableElement('sellInstrumentButton');
         initCurrentPosition();
     } else {
         uiUtils.enableElement('ttQuantity');
-        uiUtils.enableElement('buyInstrumentButton');
-        uiUtils.enableElement('sellInstrumentButton');
+        //uiUtils.enableElement('buyInstrumentButton');
+        //uiUtils.enableElement('sellInstrumentButton');
         autoTradePnl = 0;
     }
 }
@@ -301,7 +272,7 @@ function buildOrder(side, price) {
         recvWindow: 30000
     }
     if (type === 'LIMIT') {
-        let orderPrice = price ? price : currentBidPrice; //bid and ask prices mixed intentionally to speed-up order execution
+        let orderPrice = price ? price : currentBidPrice; //bid and ask prices swapped intentionally to speed-up limit orders execution
         if (side === 'BUY') {
             orderPrice = price ? price : currentAskPrice;
         }
