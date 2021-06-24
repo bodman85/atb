@@ -5,12 +5,12 @@ const CircularBuffer = require("circular-buffer");
 const urlParams = new URLSearchParams(window.location.search);
 const instrumentSymbol = urlParams.get('instrument');
 
-const TREND_BUFFER_SIZE = 5;
-const FORECAST_BUFFER_SIZE = 100;
+const TREND_BUFFER_SIZE = 3;
+const FORECAST_BUFFER_SIZE = 10;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
 
-const TREND_DELTA_EDGE_VALUE = 0.04;
-const FORECAST_DELTA_EDGE_VALUE = 0.1;
+const TREND_DELTA_EDGE_VALUE = 0.02;
+const FORECAST_DELTA_EDGE_VALUE = 0.15;
 const TARGET_PROFIT = 0.04;
 
 const LIMIT_ORDER_PENDING_TIME = 1000;
@@ -18,6 +18,7 @@ const TREND_VALID_TIME = 2000;
 
 let FAIR_PRICE_DELTAS = new CircularBuffer(FORECAST_BUFFER_SIZE);
 let PREVIOUS_PRICE_DELTAS = new CircularBuffer(TREND_BUFFER_SIZE);
+let PRICE_TICKERS = new CircularBuffer(100);
 
 let previousPrice = 0;
 let currentPrice = 0;
@@ -52,6 +53,8 @@ window.onload = async function () {
         previousPrice = currentPrice;
         currentPrice = ticker['c'];
 
+        PRICE_TICKERS.enq(currentPrice);
+
         if (!dataManager.isEmpty(currentPosition)) {
             currentPosition.unRealizedProfit = computePnlPcntFor(currentPosition);
         }
@@ -80,6 +83,7 @@ window.onload = async function () {
         FAIR_PRICE_DELTAS.enq(fairPriceDelta);
 
         let priceForecast = getPriceForecastBasedOnBidAskRatio();
+        //getPriceForecastBasedOnAveragePrice();
 
         document.getElementById('priceForecast').value = (priceForecast > FORECAST_DELTA_EDGE_VALUE) ? 'UP' : (priceForecast < -FORECAST_DELTA_EDGE_VALUE) ? 'DOWN' : '???';
         uiUtils.paintRedOrGreen(priceForecast, 'priceForecast');
@@ -90,22 +94,22 @@ function autoTrade() {
     let trend = getPriceTrend();
     let forecast = getPriceForecastBasedOnBidAskRatio();
     if (!hasAmount(currentPosition)) { // No position
-        if ((trend >= 0) && isUp(forecast)) {
+        if (trend > 0 && isUp(forecast)) {
             placeBuyOrder();
-        } else if ((trend <= 0) && isDown(forecast)) {
+        } else if (trend < 0 && isDown(forecast)) {
             placeSellOrder();
         }
     } else { // position exists
         if (currentPosition.positionAmt > 0) { //long position
-            if (currentPosition.unRealizedProfit < -TARGET_PROFIT) {
+            if (isDesc(trend) && isDown(forecast) || currentPosition.unRealizedProfit < -TARGET_PROFIT*2.5) {
                 placeSellOrder(); // Stop Loss
-            } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.5) {
+            } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.1) {
                 placeSellOrder(); // Backup Take Profit
             }
         } else if (currentPosition.positionAmt < 0) { //short position
-            if (currentPosition.unRealizedProfit < -TARGET_PROFIT) {
+            if (isAsc(trend) && isUp(forecast) ||currentPosition.unRealizedProfit < -TARGET_PROFIT*2.5) {
                 placeBuyOrder(); // Stop Loss
-            } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.5) {
+            } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.1) {
                 placeBuyOrder(); // Backup Take Profit
             }
         }
@@ -225,8 +229,20 @@ function getPriceForecastBasedOnBidAskRatio() {
     for (let p of fpArray) {
         accu += p;
     }
-    //console.log(accu);
+    //console.log(`Price forecast: ${accu}`);
     return accu;
+}
+
+function getPriceForecastBasedOnAveragePrice() {
+    let accu = 0;
+    let ptArray = PRICE_TICKERS.toarray();
+    for (let p of ptArray) {
+        accu += parseFloat(p);
+    }
+    let avgPrice = accu / ptArray.length;
+    let avgPriceDelta = (avgPrice - currentPrice) / currentPrice * 100;
+    //console.log(`Average price delta: ${avgPriceDelta}`);
+    return avgPriceDelta;
 }
 
 function getPriceTrend() {
