@@ -5,13 +5,13 @@ const CircularBuffer = require("circular-buffer");
 const urlParams = new URLSearchParams(window.location.search);
 const instrumentSymbol = urlParams.get('instrument');
 
-const TREND_BUFFER_SIZE = 10;
-const FORECAST_BUFFER_SIZE = 50;
+const TREND_BUFFER_SIZE = 5;
+const FORECAST_BUFFER_SIZE = 100;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
 
 const TREND_DELTA_EDGE_VALUE = 0.04;
 const FORECAST_DELTA_EDGE_VALUE = 0.1;
-const TARGET_PROFIT = 0.02;
+const TARGET_PROFIT = 0.04;
 
 const LIMIT_ORDER_PENDING_TIME = 1000;
 const TREND_VALID_TIME = 2000;
@@ -97,16 +97,16 @@ function autoTrade() {
         }
     } else { // position exists
         if (currentPosition.positionAmt > 0) { //long position
-            if ((currentPosition.unRealizedProfit < -(TARGET_PROFIT + 2 * LIMIT_ORDER_FEE_PCNT))
-                || isDesc(trend) && currentPosition.unRealizedProfit > 0
-                || currentPosition.unRealizedProfit >= TARGET_PROFIT) {
-                placeSellOrder();
+            if (currentPosition.unRealizedProfit < -TARGET_PROFIT) {
+                placeSellOrder(); // Stop Loss
+            } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.5) {
+                placeSellOrder(); // Backup Take Profit
             }
         } else if (currentPosition.positionAmt < 0) { //short position
-            if ((currentPosition.unRealizedProfit < -(TARGET_PROFIT + 2 * LIMIT_ORDER_FEE_PCNT))
-                || isAsc(trend) && currentPosition.unRealizedProfit > 0
-                || currentPosition.unRealizedProfit >= TARGET_PROFIT) {
-                placeBuyOrder();
+            if (currentPosition.unRealizedProfit < -TARGET_PROFIT) {
+                placeBuyOrder(); // Stop Loss
+            } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.5) {
+                placeBuyOrder(); // Backup Take Profit
             }
         }
     }
@@ -148,9 +148,21 @@ function processUserDataStream(stream) {
             position.entryPrice = obj.a.P[0].ep;
             if (position.positionAmt == 0) {
                 totalPnlPcnt += currentPosition.unRealizedProfit;
+            } else {
+                placeStopOrderFor(position);
             }
             updateCurrentPosition(position.symbol, position.positionAmt, position.entryPrice, computePnlPcntFor(position))
         }
+    }
+}
+
+function placeStopOrderFor(position) {
+    if (position.positionAmt > 0) {
+        let stopPrice = parseFloat(parseFloat(position.entryPrice) + position.entryPrice / 100 * TARGET_PROFIT).toFixed(2)
+        placeSellOrder(stopPrice);
+    } else if (position.positionAmt < 0) {
+        let stopPrice = parseFloat(position.entryPrice - position.entryPrice / 100 * TARGET_PROFIT).toFixed(2);
+        placeBuyOrder(stopPrice);
     }
 }
 
@@ -213,7 +225,7 @@ function getPriceForecastBasedOnBidAskRatio() {
     for (let p of fpArray) {
         accu += p;
     }
-    console.log(accu);
+    //console.log(accu);
     return accu;
 }
 
@@ -246,21 +258,21 @@ function handleTradeAutoSwitcher() {
     }
 }
 
-function placeBuyOrder() {
-    if (Date.now() - orderLastPlaced >= LIMIT_ORDER_PENDING_TIME) {
-        dataManager.placeOrder(buildOrder('BUY'));
+function placeBuyOrder(price) {
+    if (price || (Date.now() - orderLastPlaced >= LIMIT_ORDER_PENDING_TIME)) {
+        dataManager.placeOrder(buildOrder('BUY', price));
         orderLastPlaced = Date.now();
     }
 }
 
-function placeSellOrder() {
-    if (Date.now() - orderLastPlaced >= LIMIT_ORDER_PENDING_TIME) {
-        dataManager.placeOrder(buildOrder('SELL'));
+function placeSellOrder(price) {
+    if (price || (Date.now() - orderLastPlaced >= LIMIT_ORDER_PENDING_TIME)) {
+        dataManager.placeOrder(buildOrder('SELL', price));
         orderLastPlaced = Date.now();
     }
 }
 
-function buildOrder(side) {
+function buildOrder(side, price) {
     let type = 'MARKET';
     if (document.getElementById("limitOrdersAutoSwitcher").checked) {
         type = 'LIMIT';
@@ -273,9 +285,9 @@ function buildOrder(side) {
         recvWindow: 30000
     }
     if (type === 'LIMIT') {
-        let orderPrice = currentBidPrice; //bid and ask prices mixed intentionally to speed-up order execution
+        let orderPrice = price ? price : currentBidPrice; //bid and ask prices mixed intentionally to speed-up order execution
         if (side === 'BUY') {
-            orderPrice = currentAskPrice;
+            orderPrice = price ? price : currentAskPrice;
         }
         Object.assign(order, { price: orderPrice, timeInForce: 'GTC' });
     }
