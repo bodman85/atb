@@ -37,8 +37,10 @@ window.onload = async function () {
     setInterval(pollOrders, 2000);
     setInterval(displayCurrentPosition, 1000);
 
-    setInterval(function () { dataManager.pollUserDataStream(function (stream) { processUserDataStream(stream); }) }, 1200000);
-    //setInterval(dataManager.refreshListenKey, 300000);
+    dataManager.pollUserDataStream(function (stream) {
+        processUserDataStream(stream);
+    });
+    setInterval(dataManager.refreshListenKey, 600000);
 
     dataManager.pollPriceTickerFor(instrumentSymbol, ticker => {
         previousPrice = currentPrice;
@@ -89,13 +91,13 @@ function autoTrade() {
         }
     } else { // position exists
         if (currentPosition.positionAmt > 0) { //long position
-            if (currentPosition.unRealizedProfit < -TARGET_PROFIT * 10) {
+            if (isDesc(generalTrend) || currentPosition.unRealizedProfit < -TARGET_PROFIT * 10) {
                 placeSellOrder(); // Stop Loss
             } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.1) {
                 placeSellOrder(); // Backup Take Profit
             }
         } else if (currentPosition.positionAmt < 0) { //short position
-            if (currentPosition.unRealizedProfit < -TARGET_PROFIT * 10) {
+            if (isAsc(generalTrend) || currentPosition.unRealizedProfit < -TARGET_PROFIT * 10) {
                 placeBuyOrder(); // Stop Loss
             } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.1) {
                 placeBuyOrder(); // Backup Take Profit
@@ -125,12 +127,12 @@ function processUserDataStream(stream) {
     for (var i in strLines) {
         var obj = JSON.parse(strLines[i]);
         if (obj.e === 'ACCOUNT_UPDATE') {
-            dataManager.cancelAllOrdersFor(instrumentSymbol);
             let position = {};
             position.symbol = obj.a.P[0].s;
             position.positionAmt = obj.a.P[0].pa;
             position.entryPrice = obj.a.P[0].ep;
             if (position.positionAmt == 0) {
+                dataManager.cancelAllOrdersFor(instrumentSymbol);
                 totalPnlPcnt += currentPosition.unRealizedProfit;
             } else {
                 placeStopOrderFor(position);
@@ -245,17 +247,25 @@ function handleTradeAutoSwitcher() {
     }
 }
 
-function placeBuyOrder(price) {
-    if (price || (Date.now() - orderLastPlaced >= LIMIT_ORDER_PENDING_TIME)) {
-        dataManager.placeOrder(buildOrder('BUY', price));
-        orderLastPlaced = Date.now();
+function placeBuyOrder(stopPrice) {
+    if (stopPrice || (Date.now() - orderLastPlaced >= LIMIT_ORDER_PENDING_TIME)) {
+        dataManager.placeOrder(buildOrder('BUY', stopPrice), function (order) {
+            if (!stopPrice) {
+                setTimeout(dataManager.cancelOrder, 1500, order);
+            }
+            orderLastPlaced = Date.now();
+        });
     }
 }
 
-function placeSellOrder(price) {
-    if (price || (Date.now() - orderLastPlaced >= LIMIT_ORDER_PENDING_TIME)) {
-        dataManager.placeOrder(buildOrder('SELL', price));
-        orderLastPlaced = Date.now();
+function placeSellOrder(stopPrice) {
+    if (stopPrice || (Date.now() - orderLastPlaced >= LIMIT_ORDER_PENDING_TIME)) {
+        dataManager.placeOrder(buildOrder('SELL', stopPrice), function (order) {
+            if (!stopPrice) {
+                setTimeout(dataManager.cancelOrder, 1500, order);
+            }
+            orderLastPlaced = Date.now();
+        });
     }
 }
 
