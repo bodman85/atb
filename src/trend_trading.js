@@ -11,7 +11,7 @@ const TREND_BUFFER_SIZE = 600;
 const FORECAST_DELTA_EDGE_VALUE = 0.1;
 const TREND_INDICATOR_DELTA = 0.25;
 
-const TARGET_PROFIT = 0.04;
+const TARGET_PROFIT = 0.05;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
 const LIMIT_ORDER_PENDING_TIME = 2000;
 
@@ -84,9 +84,9 @@ function autoTrade() {
     let momentTrend = getMomentPriceTrend();
     let forecast = getPriceForecastBasedOnBidAskRatio();
     if (!currentPosition.positionAmt) { // No position
-        if (isAsc(generalTrend) && momentTrend > 0 && isUp(forecast)) {
+        if (isAsc(generalTrend) && momentTrend > 0 && isPriceAtLocalMinimum() && isUp(forecast)) {
             placeBuyOrder();
-         } else if (isDesc(generalTrend) && momentTrend < 0 && isDown(forecast)) {
+        } else if (isDesc(generalTrend) && momentTrend < 0 && isPriceAtLocalMaximum() && isDown(forecast)) {
             placeSellOrder();
         }
     } else { // position exists
@@ -135,7 +135,7 @@ function processUserDataStream(stream) {
             if (position.positionAmt == 0) {
                 console.log('Position closed. Cancelling all open orders');
                 dataManager.cancelAllOrdersFor(instrumentSymbol);
-                totalPnlPcnt += currentPosition.unRealizedProfit;
+                totalPnlPcnt += parseFloat(currentPosition.unRealizedProfit);
             } else {
                 console.log('Position opened. Placing STOP-Order');
                 placeStopOrderFor(position);
@@ -236,6 +236,22 @@ function getGeneralPriceTrend() {
     return trend;
 }
 
+function getPriceLocalMaximum() {
+    return Math.max(...PRICE_TICKERS.toarray());
+}
+
+function getPriceLocalMinimum() {
+    return Math.min(...PRICE_TICKERS.toarray());
+}
+
+function isPriceAtLocalMaximum() {
+    return Math.abs(currentPrice - getPriceLocalMaximum) < Math.abs(currentPrice - getPriceLocalMinimum);
+}
+
+function isPriceAtLocalMinimum() {
+    return Math.abs(currentPrice - getPriceLocalMinimum) < Math.abs(currentPrice - getPriceLocalMaximum);
+}
+
 function handleTradeAutoSwitcher() {
     if (document.getElementById("tradeAutoSwitcher").checked) {
         uiUtils.disableElement('ttQuantity');
@@ -255,6 +271,7 @@ function placeBuyOrder(stopPrice) {
         if (!stopPrice) {
             orderLastPlaced = Date.now();
         } 
+        console.log('Buy order placed');
         dataManager.placeOrder(buildOrder('BUY', stopPrice), function (order) {
             if (!stopPrice) {
                 setTimeout(dataManager.cancelOrder, LIMIT_ORDER_PENDING_TIME, order);
@@ -268,6 +285,7 @@ function placeSellOrder(stopPrice) {
         if (!stopPrice) {
             orderLastPlaced = Date.now();
         } 
+        console.log('Sell order placed');
         dataManager.placeOrder(buildOrder('SELL', stopPrice), function (order) {
             if (!stopPrice) {
                 setTimeout(dataManager.cancelOrder, LIMIT_ORDER_PENDING_TIME, order);
