@@ -84,9 +84,9 @@ function autoTrade() {
     let momentTrend = getMomentPriceTrend();
     let forecast = getPriceForecastBasedOnBidAskRatio();
     if (!currentPosition.positionAmt) { // No position
-        if (isAsc(generalTrend) && momentTrend > 0 && isPriceAtLocalMinimum() && isUp(forecast)) {
+        if (generalTrend > 0 && momentTrend > 0 && priceIsFarFromLocalMaximum() && isUp(forecast)) {
             placeBuyOrder();
-        } else if (isDesc(generalTrend) && momentTrend < 0 && isPriceAtLocalMaximum() && isDown(forecast)) {
+        } else if (generalTrend < 0 && momentTrend < 0 && priceIsFarFromLocalMinimum() && isDown(forecast)) {
             placeSellOrder();
         }
     } else { // position exists
@@ -236,20 +236,22 @@ function getGeneralPriceTrend() {
     return trend;
 }
 
-function getPriceLocalMaximum() {
-    return Math.max(...PRICE_TICKERS.toarray());
-}
-
 function getPriceLocalMinimum() {
     return Math.min(...PRICE_TICKERS.toarray());
 }
 
-function isPriceAtLocalMaximum() {
-    return Math.abs(currentPrice - getPriceLocalMaximum) < Math.abs(currentPrice - getPriceLocalMinimum);
+function getPriceLocalMaximum() {
+    return Math.max(...PRICE_TICKERS.toarray());
 }
 
-function isPriceAtLocalMinimum() {
-    return Math.abs(currentPrice - getPriceLocalMinimum) < Math.abs(currentPrice - getPriceLocalMaximum);
+function priceIsFarFromLocalMaximum() {
+    let localMax = getPriceLocalMaximum();
+    return (localMax - currentPrice) / currentPrice * 100 >= TARGET_PROFIT;
+}
+
+function priceIsFarFromLocalMinimum() {
+    let localMin = getPriceLocalMinimum()
+    return (currentPrice - localMin) / localMin >= TARGET_PROFIT;
 }
 
 function handleTradeAutoSwitcher() {
