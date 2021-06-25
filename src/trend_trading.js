@@ -84,20 +84,20 @@ function autoTrade() {
     let momentTrend = getMomentPriceTrend();
     let forecast = getPriceForecastBasedOnBidAskRatio();
     if (!currentPosition.positionAmt) { // No position
-        if (/*isAsc(generalTrend) && momentTrend > 0 &&*/ isUp(forecast)) {
+        if (isAsc(generalTrend) && momentTrend > 0 && isUp(forecast)) {
             placeBuyOrder();
-         } else if (/*isDesc(generalTrend) && momentTrend < 0 &&*/ isDown(forecast)) {
+         } else if (isDesc(generalTrend) && momentTrend < 0 && isDown(forecast)) {
             placeSellOrder();
         }
     } else { // position exists
         if (currentPosition.positionAmt > 0) { //long position
-            if (/*isDesc(generalTrend) || */currentPosition.unRealizedProfit < -TARGET_PROFIT * 10) {
+            if (isDesc(generalTrend) || currentPosition.unRealizedProfit < -TARGET_PROFIT * 10) {
                 placeSellOrder(); // Stop Loss here 176(!) orders placed
             } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.1) {
                 placeSellOrder(); // Backup Take Profit
             }
         } else if (currentPosition.positionAmt < 0) { //short position
-            if (/*isAsc(generalTrend) || */currentPosition.unRealizedProfit < -TARGET_PROFIT * 10) {
+            if (isAsc(generalTrend) || currentPosition.unRealizedProfit < -TARGET_PROFIT * 10) {
                 placeBuyOrder(); // Stop Loss
             } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.1) {
                 placeBuyOrder(); // Backup Take Profit
@@ -254,10 +254,7 @@ function placeBuyOrder(stopPrice) {
     if (stopPrice || (Date.now() - orderLastPlaced >= LIMIT_ORDER_PENDING_TIME)) {
         if (!stopPrice) {
             orderLastPlaced = Date.now();
-            console.log('Placing Buy order');
-        } else {
-            console.log('Placing Buy STOP-order');
-        }
+        } 
         dataManager.placeOrder(buildOrder('BUY', stopPrice), function (order) {
             if (!stopPrice) {
                 setTimeout(dataManager.cancelOrder, LIMIT_ORDER_PENDING_TIME, order);
@@ -270,10 +267,7 @@ function placeSellOrder(stopPrice) {
     if (stopPrice || (Date.now() - orderLastPlaced >= LIMIT_ORDER_PENDING_TIME)) {
         if (!stopPrice) {
             orderLastPlaced = Date.now();
-            console.log('Placing Sell order');
-        } else {
-            console.log('Placing Sell STOP-order');
-        }
+        } 
         dataManager.placeOrder(buildOrder('SELL', stopPrice), function (order) {
             if (!stopPrice) {
                 setTimeout(dataManager.cancelOrder, LIMIT_ORDER_PENDING_TIME, order);
