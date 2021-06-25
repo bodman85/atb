@@ -250,8 +250,8 @@ function priceIsFarFromLocalMaximum() {
 }
 
 function priceIsFarFromLocalMinimum() {
-    let localMin = getPriceLocalMinimum()
-    return (currentPrice - localMin) / localMin >= TARGET_PROFIT;
+    let localMin = getPriceLocalMinimum();
+    return (currentPrice - localMin) / localMin * 100 >= TARGET_PROFIT;
 }
 
 function handleTradeAutoSwitcher() {
