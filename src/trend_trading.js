@@ -73,7 +73,7 @@ window.onload = async function () {
     dataManager.pollDepthFor(instrumentSymbol, data => {
         //let priceTrend = getGeneralPriceTrend();
         document.getElementById('priceTrend').value = allTrendsAsc() ? 'ASC' : allTrendsDesc() ? 'DESC' : 'FLAT';
-        uiUtils.paintRedOrGreen(trend_5m, 'priceTrend');
+        uiUtils.paintRedOrGreen(trend_1m, 'priceTrend');
 
         let fairPriceDelta = parseFloat((computeFairPrice(data) - currentPrice) / currentPrice * 100);
         FAIR_PRICE_DELTAS.enq(fairPriceDelta);
