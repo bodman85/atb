@@ -182,6 +182,14 @@ function pollDepthFor(symbol, callback) {
     };
 }
 
+function pollKlinesFor(symbol, interval, callback) {
+    const ws = new W3CWebSocket(`${WEBSOCKET_URL}${symbol.toLowerCase()}@kline_${interval}`);
+    ws.onmessage = function (e) {
+        let data = JSON.parse(e.data);
+        callback(data);
+    };
+}
+
 function pollUserDataStream(callback) {
     firePostRequestWithCallback(LISTEN_KEY, function (resp) {
         //console.log(resp.listenKey);
@@ -222,6 +230,7 @@ module.exports = {
     pollPriceTickerFor: pollPriceTickerFor,
     pollBookTickerFor: pollBookTickerFor,
     pollDepthFor: pollDepthFor,
+    pollKlinesFor: pollKlinesFor,
     pollUserDataStream: pollUserDataStream,
     refreshListenKey: refreshListenKey,
     isEmpty: isEmpty

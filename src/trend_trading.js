@@ -9,9 +9,9 @@ const FORECAST_BUFFER_SIZE = 10;
 const TREND_BUFFER_SIZE = 600;
 
 const FORECAST_DELTA_EDGE_VALUE = 0.1;
-const TREND_INDICATOR_DELTA = 0.25;
+const TREND_INDICATOR_DELTA = 0.05;
 
-const TARGET_PROFIT = 0.25;
+const TARGET_PROFIT = 1;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
 const LIMIT_ORDER_PENDING_TIME = 2000;
 
@@ -25,6 +25,11 @@ let totalPnlPcnt = 0;
 
 let orderLastPlaced = Date.now();
 let currentPosition = {};
+
+let trend_5m = 0;
+let trend_15m = 0;
+let trend_30m = 0;
+let trend_1h = 0;
 
 
 window.onload = async function () {
@@ -65,9 +70,9 @@ window.onload = async function () {
     });
 
     dataManager.pollDepthFor(instrumentSymbol, data => {
-        let priceTrend = getGeneralPriceTrend();
-        document.getElementById('priceTrend').value = priceTrend > TREND_INDICATOR_DELTA ? 'ASC' : priceTrend < -TREND_INDICATOR_DELTA ? 'DESC' : 'FLAT';
-        uiUtils.paintRedOrGreen(priceTrend, 'priceTrend');
+        //let priceTrend = getGeneralPriceTrend();
+        document.getElementById('priceTrend').value = allTrendsAsc() ? 'ASC' : allTrendsDesc ? 'DESC' : 'FLAT';
+        uiUtils.paintRedOrGreen(trend_5m, 'priceTrend');
 
         let fairPriceDelta = parseFloat((computeFairPrice(data) - currentPrice) / currentPrice * 100);
         FAIR_PRICE_DELTAS.enq(fairPriceDelta);
@@ -77,27 +82,49 @@ window.onload = async function () {
         document.getElementById('priceForecast').value = (priceForecast > FORECAST_DELTA_EDGE_VALUE) ? 'UP' : (priceForecast < -FORECAST_DELTA_EDGE_VALUE) ? 'DOWN' : '???';
         uiUtils.paintRedOrGreen(priceForecast, 'priceForecast');
     });
+
+    dataManager.pollKlinesFor(instrumentSymbol, '5m', kline => {
+        trend_5m = computeDeltaInPcnt(kline.k['o'], kline.k['c']);
+    });
+
+    dataManager.pollKlinesFor(instrumentSymbol, '15m', kline => {
+        trend_15m = computeDeltaInPcnt(kline.k['o'], kline.k['c']);
+    });
+
+    dataManager.pollKlinesFor(instrumentSymbol, '30m', kline => {
+        trend_30m = computeDeltaInPcnt(kline.k['o'], kline.k['c']);
+    });
+
+    dataManager.pollKlinesFor(instrumentSymbol, '1h', kline => {
+        trend_1h = computeDeltaInPcnt(kline.k['o'], kline.k['c']);
+    });
+}
+
+function computeDeltaInPcnt(first, second) {
+    let f = parseFloat(first);
+    let s = parseFloat(second);
+    return (s - f) / f * 100;
 }
 
 function autoTrade() {
-    let generalTrend = getGeneralPriceTrend();
+    //let generalTrend = getGeneralPriceTrend();
     let momentTrend = getMomentPriceTrend();
-    let forecast = getPriceForecastBasedOnBidAskRatio();
+    //let forecast = getPriceForecastBasedOnBidAskRatio();
     if (!currentPosition.positionAmt) { // No position
-        if (isAsc(generalTrend) && momentTrend > 0 /*&& priceIsFarFromLocalMaximum()*/ && isUp(forecast)) {
+        if (allTrendsAsc() && momentTrend > 0) {
             placeBuyOrder();
-        } else if (isDesc(generalTrend) && momentTrend < 0 /*&& priceIsFarFromLocalMinimum()*/ && isDown(forecast)) {
+        } else if (allTrendsDesc() && momentTrend < 0) {
             placeSellOrder();
         }
     } else { // position exists
         if (currentPosition.positionAmt > 0) { //long position
-            if (isDesc(generalTrend) || currentPosition.unRealizedProfit < -TARGET_PROFIT) {
+            if (isDesc(trend_5m) || currentPosition.unRealizedProfit < -(TARGET_PROFIT + LIMIT_ORDER_FEE_PCNT * 2) || isFlat(trend_5m) && currentPosition.unRealizedProfit > 0) {
                 placeSellOrder(); // Stop Loss
             } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.1) {
                 placeSellOrder(); // Backup Take Profit
             }
         } else if (currentPosition.positionAmt < 0) { //short position
-            if (isAsc(generalTrend) || currentPosition.unRealizedProfit < -TARGET_PROFIT) {
+            if (isAsc(trend_5m) || currentPosition.unRealizedProfit < -(TARGET_PROFIT + LIMIT_ORDER_FEE_PCNT * 2) || isFlat(trend_5m) && currentPosition.unRealizedProfit > 0) {
                 placeBuyOrder(); // Stop Loss
             } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.1) {
                 placeBuyOrder(); // Backup Take Profit
@@ -106,12 +133,27 @@ function autoTrade() {
     }
 }
 
-function isDesc(trend) {
-    return trend < -TREND_INDICATOR_DELTA;
+function isDesc(trend, coefficient) {
+    let c = coefficient || 1;
+    return trend <= -TREND_INDICATOR_DELTA * c;
 }
 
-function isAsc(trend) {
-    return trend > TREND_INDICATOR_DELTA;
+function isFlat(trend, coefficient) {
+    let c = coefficient || 1;
+    return trend > -TREND_INDICATOR_DELTA * c && trend < TREND_INDICATOR_DELTA * c;
+}
+
+function isAsc(trend, coefficient) {
+    let c = coefficient || 1;
+    return trend >= TREND_INDICATOR_DELTA * c;
+}
+
+function allTrendsDesc() {
+    return isDesc(trend_5m, 1) && isDesc(trend_15m, 3) && isDesc(trend_30m, 6) && isDesc(trend_1h, 12);
+}
+
+function allTrendsAsc() {
+    return isAsc(trend_5m, 1) && isAsc(trend_15m, 3) && isAsc(trend_30m, 6) && isAsc(trend_1h, 12);
 }
 
 function isDown(forecast) {
@@ -220,9 +262,9 @@ function getPriceForecastBasedOnBidAskRatio() {
 
 function getMomentPriceTrend() {
     let ptArray = PRICE_TICKERS.toarray();
-    let first = ptArray[4];
+    let first = ptArray[5];
     let last = ptArray[0];
-    let trend = (last - first) / first * 100;
+    let trend = computeDeltaInPcnt(first, last);
     //console.log(`Moment trend: ${trend}`);
     return trend;
 }
@@ -242,16 +284,6 @@ function getPriceLocalMinimum() {
 
 function getPriceLocalMaximum() {
     return Math.max(...PRICE_TICKERS.toarray());
-}
-
-function priceIsFarFromLocalMaximum() {
-    let localMax = getPriceLocalMaximum();
-    return (localMax - currentPrice) / currentPrice * 100 >= 0.05;
-}
-
-function priceIsFarFromLocalMinimum() {
-    let localMin = getPriceLocalMinimum();
-    return (currentPrice - localMin) / localMin * 100 >= 0.05;
 }
 
 function handleTradeAutoSwitcher() {
@@ -319,9 +351,9 @@ function buildOrder(side, price) {
 }
 
 function pollOrders() {
+    document.getElementById("openOrdersDataGrid").innerHTML = '';
     dataManager.requestOrders(orders => {
-        document.getElementById("openOrdersDataGrid").innerHTML = '';
-        let filteredOrders = orders.filter(o => o.symbol === instrumentSymbol);
+        let filteredOrders = orders.filter(o => o.symbol === instrumentSymbol && o.status === 'NEW' && o.price != 0);
         if (filteredOrders.length > 0) {
             uiUtils.showElement("ttRemoveAllOrdersButton");
         } else {
