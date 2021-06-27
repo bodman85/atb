@@ -9,11 +9,11 @@ const FORECAST_BUFFER_SIZE = 10;
 const TREND_BUFFER_SIZE = 600;
 
 const FORECAST_DELTA_EDGE_VALUE = 0.1;
-const TREND_INDICATOR_DELTA = 0.05;
+const TREND_INDICATOR_DELTA = 0.01;
 
 const TARGET_PROFIT = 1;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
-const LIMIT_ORDER_PENDING_TIME = 2000;
+const LIMIT_ORDER_PENDING_TIME = 5000;
 
 let FAIR_PRICE_DELTAS = new CircularBuffer(FORECAST_BUFFER_SIZE);
 let PRICE_TICKERS = new CircularBuffer(TREND_BUFFER_SIZE);
@@ -26,6 +26,7 @@ let totalPnlPcnt = 0;
 let orderLastPlaced = Date.now();
 let currentPosition = {};
 
+let trend_1m = 0;
 let trend_5m = 0;
 let trend_15m = 0;
 let trend_30m = 0;
@@ -39,7 +40,7 @@ window.onload = async function () {
     document.getElementById("ttRemoveAllOrdersButton").addEventListener("click", function () { dataManager.cancelAllOrdersFor(instrumentSymbol) });
     document.getElementById('tradeAutoSwitcher').addEventListener('click', handleTradeAutoSwitcher);
     setInterval(initCurrentPosition, 10000);
-    setInterval(pollOrders, 2000);
+    setInterval(function () { pollOrders(instrumentSymbol) }, 2000);
     setInterval(displayCurrentPosition, 1000);
 
     dataManager.pollUserDataStream(function (stream) {
@@ -83,6 +84,10 @@ window.onload = async function () {
         uiUtils.paintRedOrGreen(priceForecast, 'priceForecast');
     });
 
+    dataManager.pollKlinesFor(instrumentSymbol, '1m', kline => {
+        trend_1m = computeDeltaInPcnt(kline.k['o'], kline.k['c']);
+    });
+
     dataManager.pollKlinesFor(instrumentSymbol, '5m', kline => {
         trend_5m = computeDeltaInPcnt(kline.k['o'], kline.k['c']);
     });
@@ -108,19 +113,19 @@ function computeDeltaInPcnt(first, second) {
 
 function autoTrade() {
     //let generalTrend = getGeneralPriceTrend();
-    let momentTrend = getMomentPriceTrend();
-    //let forecast = getPriceForecastBasedOnBidAskRatio();
+    //let momentTrend = getMomentPriceTrend();
+    let forecast = getPriceForecastBasedOnBidAskRatio();
     if (!currentPosition.positionAmt) { // No position
-        if (allTrendsAsc() && momentTrend > 0) {
+        if (allTrendsAsc() /*&& isUp(forecast)*/) {
             placeBuyOrder();
-        } else if (allTrendsDesc() && momentTrend < 0) {
+        } else if (allTrendsDesc() /*&& isDown(forecast)*/) {
             placeSellOrder();
         }
     } else { // position exists
         if (currentPosition.positionAmt > 0) { //long position
-            if (isDesc(trend_5m)
+            if (isDesc(trend_5m, 5)
                 || currentPosition.unRealizedProfit < -(TARGET_PROFIT + LIMIT_ORDER_FEE_PCNT * 2)
-                || trend_5m <=0 && currentPosition.unRealizedProfit > 0) {
+                || isDesc(trend_1m) && currentPosition.unRealizedProfit > 0) {
                 placeSellOrder(); // Stop Loss
             } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.1) {
                 placeSellOrder(); // Backup Take Profit
@@ -128,7 +133,7 @@ function autoTrade() {
         } else if (currentPosition.positionAmt < 0) { //short position
             if (isAsc(trend_5m)
                 || currentPosition.unRealizedProfit < -(TARGET_PROFIT + LIMIT_ORDER_FEE_PCNT * 2)
-                || trend_5m >=0 && currentPosition.unRealizedProfit > 0) {
+                || isDesc(trend_1m) && currentPosition.unRealizedProfit > 0) {
                 placeBuyOrder(); // Stop Loss
             } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.1) {
                 placeBuyOrder(); // Backup Take Profit
@@ -153,11 +158,11 @@ function isAsc(trend, coefficient) {
 }
 
 function allTrendsDesc() {
-    return isDesc(trend_5m, 1) && isDesc(trend_15m, 3) && isDesc(trend_30m, 6) && isDesc(trend_1h, 12);
+    return isDesc(trend_1m, 1) && isDesc(trend_5m, 5) && isDesc(trend_15m, 3) && isDesc(trend_30m, 6) && isDesc(trend_1h, 12);
 }
 
 function allTrendsAsc() {
-    return isAsc(trend_5m, 1) && isAsc(trend_15m, 3) && isAsc(trend_30m, 6) && isAsc(trend_1h, 12);
+    return isAsc(trend_1m, 1) && isAsc(trend_5m, 5) && isAsc(trend_15m, 3) && isAsc(trend_30m, 6) && isAsc(trend_1h, 12);
 }
 
 function isDown(forecast) {
@@ -354,16 +359,16 @@ function buildOrder(side, price) {
     return order;
 }
 
-function pollOrders() {
-    document.getElementById("openOrdersDataGrid").innerHTML = '';
-    dataManager.requestOrders(orders => {
-        let filteredOrders = orders.filter(o => o.symbol === instrumentSymbol && o.status === 'NEW' && o.price != 0);
-        if (filteredOrders.length > 0) {
+function pollOrders(symbol) {
+    dataManager.requestOrders(symbol, orders => {
+        //let filteredOrders = orders.filter(o => o.symbol === instrumentSymbol);
+        if (orders.length > 0) {
             uiUtils.showElement("ttRemoveAllOrdersButton");
         } else {
             uiUtils.hideElement("ttRemoveAllOrdersButton");
         }
-        for (let order of filteredOrders) {
+        document.getElementById("openOrdersDataGrid").innerHTML = '';
+        for (let order of orders) {
             let row = uiUtils.createTableRow();
             row.appendChild(uiUtils.createTextColumn(order.orderId));
             row.appendChild(uiUtils.createTextColumn(order.symbol));

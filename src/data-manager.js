@@ -116,8 +116,8 @@ function placeHedgedOrder(order, callback) {
     //fireTestRequestWithCallback(ORDER + '?' + sellQueryString, callback);
 }
 
-function requestOrders(callback) {
-    let queryString = `timeStamp=${Date.now()}`;
+function requestOrders(symbol, callback) {
+    let queryString = `symbol=${symbol}&timeStamp=${Date.now()}`;
     queryString += sign(queryString);
     fireGetRequestWithCallback(ORDERS + '?' + queryString, callback);
 }
@@ -129,11 +129,9 @@ function cancelOrder(order, callback) {
 }
 
 function cancelAllOrdersFor(symbol, callback) {
-    requestOrders(orders => {
+    requestOrders(symbol, orders => {
         for (let o of orders) {
-            if (o.symbol === symbol) {
-                cancelOrder(o, callback);
-            }
+            cancelOrder(o, callback);
         }
     })
 }
