@@ -71,7 +71,7 @@ window.onload = async function () {
 
     dataManager.pollDepthFor(instrumentSymbol, data => {
         //let priceTrend = getGeneralPriceTrend();
-        document.getElementById('priceTrend').value = allTrendsAsc() ? 'ASC' : allTrendsDesc ? 'DESC' : 'FLAT';
+        document.getElementById('priceTrend').value = allTrendsAsc() ? 'ASC' : allTrendsDesc() ? 'DESC' : 'FLAT';
         uiUtils.paintRedOrGreen(trend_5m, 'priceTrend');
 
         let fairPriceDelta = parseFloat((computeFairPrice(data) - currentPrice) / currentPrice * 100);
@@ -118,13 +118,17 @@ function autoTrade() {
         }
     } else { // position exists
         if (currentPosition.positionAmt > 0) { //long position
-            if (isDesc(trend_5m) || currentPosition.unRealizedProfit < -(TARGET_PROFIT + LIMIT_ORDER_FEE_PCNT * 2) || isFlat(trend_5m) && currentPosition.unRealizedProfit > 0) {
+            if (isDesc(trend_5m)
+                || currentPosition.unRealizedProfit < -(TARGET_PROFIT + LIMIT_ORDER_FEE_PCNT * 2)
+                || trend_5m <=0 && currentPosition.unRealizedProfit > 0) {
                 placeSellOrder(); // Stop Loss
             } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.1) {
                 placeSellOrder(); // Backup Take Profit
             }
         } else if (currentPosition.positionAmt < 0) { //short position
-            if (isAsc(trend_5m) || currentPosition.unRealizedProfit < -(TARGET_PROFIT + LIMIT_ORDER_FEE_PCNT * 2) || isFlat(trend_5m) && currentPosition.unRealizedProfit > 0) {
+            if (isAsc(trend_5m)
+                || currentPosition.unRealizedProfit < -(TARGET_PROFIT + LIMIT_ORDER_FEE_PCNT * 2)
+                || trend_5m >=0 && currentPosition.unRealizedProfit > 0) {
                 placeBuyOrder(); // Stop Loss
             } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.1) {
                 placeBuyOrder(); // Backup Take Profit
