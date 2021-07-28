@@ -6,31 +6,31 @@ const urlParams = new URLSearchParams(window.location.search);
 const instrumentSymbol = urlParams.get('instrument');
 
 const FORECAST_BUFFER_SIZE = 10;
-const TREND_BUFFER_SIZE = 600;
 
 const FORECAST_DELTA_EDGE_VALUE = 0.1;
-const TREND_INDICATOR_DELTA = 0.01;
 
-const TARGET_PROFIT = 1;
+const TREND_DELTA_PCNT = 0.05;
+const TAKE_PROFIT_PCNT = 1;
+const STOP_LOSS_PCNT = 0.25;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
 const LIMIT_ORDER_PENDING_TIME = 5000;
 
 let FAIR_PRICE_DELTAS = new CircularBuffer(FORECAST_BUFFER_SIZE);
-let PRICE_TICKERS = new CircularBuffer(TREND_BUFFER_SIZE);
 
+let previousPrice = 0;
 let currentPrice = 0;
 let currentBidPrice = 0;
 let currentAskPrice = 0;
+let totalPnl = 0;
 let totalPnlPcnt = 0;
 
 let orderLastPlaced = Date.now();
 let currentPosition = {};
 
 let trend_1m = 0;
-let trend_5m = 0;
-let trend_15m = 0;
-let trend_30m = 0;
-let trend_1h = 0;
+let slidingAverage_30m = 0;
+let slidingAverage_1h = 0;
+let slidingAverage_4h = 0;
 
 
 window.onload = async function () {
@@ -38,6 +38,9 @@ window.onload = async function () {
     document.getElementById('buyInstrumentButton').addEventListener('click', function () { placeBuyOrder() });
     document.getElementById('sellInstrumentButton').addEventListener('click', function () { placeSellOrder() });
     document.getElementById("ttRemoveAllOrdersButton").addEventListener("click", function () { dataManager.cancelAllOrdersFor(instrumentSymbol) });
+
+    setInterval(function () { detectRapidPriceFall(instrumentSymbol) }, 3000);
+
     document.getElementById('tradeAutoSwitcher').addEventListener('click', handleTradeAutoSwitcher);
     setInterval(initCurrentPosition, 10000);
     setInterval(function () { pollOrders(instrumentSymbol) }, 2000);
@@ -52,13 +55,24 @@ window.onload = async function () {
         previousPrice = currentPrice;
         currentPrice = ticker['c'];
 
-        PRICE_TICKERS.enq(currentPrice);
+        if (takeProfitPrice > 0 && currentPrice >= takeProfitPrice) {
+            console.log(new Date().toLocaleString());
+            console.log(`Position closed with PROFIT: ${getPcntChange(rapidPriceFallFinish, currentPrice)} %`);
+            totalPnl += getPcntChange(rapidPriceFallFinish, currentPrice);
+            console.log(`Total PnL : ${totalPnl}`);
+            resetStopPrices();
+        } else if (stopLossPrice > 0 && currentPrice <= stopLossPrice) {
+            console.log(new Date().toLocaleString());
+            console.log(`Position closed with LOSS: ${getPcntChange(rapidPriceFallFinish, currentPrice)} %`);
+            totalPnl += getPcntChange(rapidPriceFallFinish, currentPrice);
+            console.log(`Total PnL : ${totalPnl}`);
+            resetStopPrices();
+        }
 
         if (!dataManager.isEmpty(currentPosition)) {
             currentPosition.unRealizedProfit = computePnlPcntFor(currentPosition);
         }
 
-        priceLastUpdated = Date.now();
         document.getElementById('ttPrice').value = currentPrice;
     });
 
@@ -70,10 +84,19 @@ window.onload = async function () {
         }
     });
 
+    function autoTrade() {
+        if (!currentPosition.positionAmt) { // No position
+            if (isTrendAsc() && trend_1m > 0) {
+                placeBuyOrder();
+            } else if (isTrendDesc() && trend_1m < 0) {
+                placeSellOrder();
+            }
+        }
+    }
+
     dataManager.pollDepthFor(instrumentSymbol, data => {
-        //let priceTrend = getGeneralPriceTrend();
-        document.getElementById('priceTrend').value = allTrendsAsc() ? 'ASC' : allTrendsDesc() ? 'DESC' : 'FLAT';
-        uiUtils.paintRedOrGreen(trend_1m, 'priceTrend');
+        document.getElementById('priceTrend').value = isTrendAsc() ? 'ASC' : isTrendDesc() ? 'DESC' : 'FLAT';
+        uiUtils.paintRedOrGreen(slidingAverage_1h - slidingAverage_4h, 'priceTrend');
 
         let fairPriceDelta = parseFloat((computeFairPrice(data) - currentPrice) / currentPrice * 100);
         FAIR_PRICE_DELTAS.enq(fairPriceDelta);
@@ -85,92 +108,99 @@ window.onload = async function () {
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '1m', kline => {
-        trend_1m = computeDeltaInPcnt(kline.k['o'], kline.k['c']);
-    });
-
-    dataManager.pollKlinesFor(instrumentSymbol, '5m', kline => {
-        trend_5m = computeDeltaInPcnt(kline.k['o'], kline.k['c']);
-    });
-
-    dataManager.pollKlinesFor(instrumentSymbol, '15m', kline => {
-        trend_15m = computeDeltaInPcnt(kline.k['o'], kline.k['c']);
+        trend_1m = getPcntChange(kline.k['o'], kline.k['c']);
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '30m', kline => {
-        trend_30m = computeDeltaInPcnt(kline.k['o'], kline.k['c']);
+        slidingAverage_30m = computeAverage(kline.k['o'], kline.k['c']);
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '1h', kline => {
-        trend_1h = computeDeltaInPcnt(kline.k['o'], kline.k['c']);
+        slidingAverage_1h = computeAverage(kline.k['o'], kline.k['c']);
+    });
+
+    dataManager.pollKlinesFor(instrumentSymbol, '4h', kline => {
+        slidingAverage_4h = computeAverage(kline.k['o'], kline.k['c']);
     });
 }
 
-function computeDeltaInPcnt(first, second) {
-    let f = parseFloat(first);
-    let s = parseFloat(second);
-    return (s - f) / f * 100;
+function isTrendAsc() {
+    return getPcntChange(slidingAverage_30m, slidingAverage_1h) >= TREND_DELTA_PCNT
+        && getPcntChange(slidingAverage_1h, slidingAverage_4h) >= TREND_DELTA_PCNT
+}
+function isTrendDesc() {
+    return getPcntChange(slidingAverage_30m, slidingAverage_1h) <= -TREND_DELTA_PCNT
+        && getPcntChange(slidingAverage_1h, slidingAverage_4h) <= -TREND_DELTA_PCNT
 }
 
-function autoTrade() {
-    //let generalTrend = getGeneralPriceTrend();
-    //let momentTrend = getMomentPriceTrend();
-    let forecast = getPriceForecastBasedOnBidAskRatio();
-    if (!currentPosition.positionAmt) { // No position
-        if (allTrendsAsc() /*&& isUp(forecast)*/) {
-            placeBuyOrder();
-        } else if (allTrendsDesc() /*&& isDown(forecast)*/) {
-            placeSellOrder();
-        }
-    } else { // position exists
-        if (currentPosition.positionAmt > 0) { //long position
-            if (isDesc(trend_5m, 5)
-                || currentPosition.unRealizedProfit < -(TARGET_PROFIT + LIMIT_ORDER_FEE_PCNT * 2)
-                || isDesc(trend_1m) && currentPosition.unRealizedProfit > 0) {
-                placeSellOrder(); // Stop Loss
-            } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.1) {
-                placeSellOrder(); // Backup Take Profit
+let price3SecondsAgo = currentPrice;
+let rapidPriceFallStart = 0;
+let rapidPriceFallFinish = 0;
+let takeProfitPrice = 0;
+let stopLossPrice = 0;
+let flatCounter = 0;
+
+function detectRapidPriceFall() {
+    if (stopLossPrice === 0 && takeProfitPrice === 0) {
+        if (getPcntChange(price3SecondsAgo, currentPrice) <= -0.2) {
+            flatCounter = 0;
+            if (rapidPriceFallStart === 0) {
+                rapidPriceFallStart = price3SecondsAgo;
+                console.log(`Rapid fall started from price ${rapidPriceFallStart}`);
+            } else {
+                console.log(`Rapid price fall goes on`);
             }
-        } else if (currentPosition.positionAmt < 0) { //short position
-            if (isAsc(trend_5m)
-                || currentPosition.unRealizedProfit < -(TARGET_PROFIT + LIMIT_ORDER_FEE_PCNT * 2)
-                || isDesc(trend_1m) && currentPosition.unRealizedProfit > 0) {
-                placeBuyOrder(); // Stop Loss
-            } else if (currentPosition.unRealizedProfit >= TARGET_PROFIT * 1.1) {
-                placeBuyOrder(); // Backup Take Profit
+        } else if (getPcntChange(price3SecondsAgo, currentPrice) >= 0.2) {
+            flatCounter = 0;
+            if (rapidPriceFallStart !== 0) {
+                rapidPriceFallFinish = currentPrice;
+                console.log(`Rapid fall finished with price ${rapidPriceFallFinish}`);
+                if (getPcntChange(rapidPriceFallStart, rapidPriceFallFinish) <= -0.5) {
+                    if (document.getElementById("tradeAutoSwitcher").checked) {
+                        takeProfitPrice = rapidPriceFallStart;
+                        stopLossPrice = rapidPriceFallFinish - 0.0025 * rapidPriceFallFinish;
+                        console.log(`========================================================`);
+                        console.log(new Date().toLocaleString());
+                        console.log(`Long position will be opened with price ${currentPrice}`);
+                        console.log(`Take Profit price: ${takeProfitPrice}`);
+                        console.log(`Stop Loss price: ${stopLossPrice}`);
+                        console.log(`========================================================`);
+                    }
+                } else {
+                    console.log(`Rapid price fall was insignificant`);
+                }
+                resetRapidPriceFallDetector();
+            }
+        } else {
+            if (rapidPriceFallStart !== 0) {
+                flatCounter++;
+                if (flatCounter === 10) {
+                    console.log(`Rapid price fall was cancelled`);
+                    resetRapidPriceFallDetector();
+                }
             }
         }
     }
+    price3SecondsAgo = currentPrice;
 }
 
-function isDesc(trend, coefficient) {
-    let c = coefficient || 1;
-    return trend <= -TREND_INDICATOR_DELTA * c;
+function resetRapidPriceFallDetector() {
+    rapidPriceFallStart = 0;
+    rapidPriceFallFinish = 0;
+    flatCounter = 0;
 }
 
-function isFlat(trend, coefficient) {
-    let c = coefficient || 1;
-    return trend > -TREND_INDICATOR_DELTA * c && trend < TREND_INDICATOR_DELTA * c;
+function resetStopPrices() {
+    takeProfitPrice = 0;
+    stopLossPrice = 0;
 }
 
-function isAsc(trend, coefficient) {
-    let c = coefficient || 1;
-    return trend >= TREND_INDICATOR_DELTA * c;
+function getPcntChange(oldValue, newValue) {
+    return ((newValue - oldValue) / oldValue) * 100;
 }
 
-function allTrendsDesc() {
-    return isDesc(trend_1m, 1) && isDesc(trend_5m, 5) && isDesc(trend_15m, 3) && isDesc(trend_30m, 6) && isDesc(trend_1h, 12);
-}
-
-function allTrendsAsc() {
-    return isAsc(trend_1m, 1) && isAsc(trend_5m, 5) && isAsc(trend_15m, 3) && isAsc(trend_30m, 6) && isAsc(trend_1h, 12);
-}
-
-function isDown(forecast) {
-    return forecast < -FORECAST_DELTA_EDGE_VALUE;
-}
-
-function isUp(forecast) {
-    return forecast > FORECAST_DELTA_EDGE_VALUE;
+function computeAverage(first, second) {
+    return ((first * 1 + second * 1) / 2);
 }
 
 function processUserDataStream(stream) {
@@ -188,21 +218,11 @@ function processUserDataStream(stream) {
                 dataManager.cancelAllOrdersFor(instrumentSymbol);
                 totalPnlPcnt += parseFloat(currentPosition.unRealizedProfit);
             } else {
-                console.log('Position opened. Placing STOP-Order');
-                placeStopOrderFor(position);
+                console.log('Position opened. Placing STOP-Orders');
+                placeStopOrdersFor(position);
             }
             updateCurrentPosition(position.symbol, position.positionAmt, position.entryPrice, computePnlPcntFor(position))
         }
-    }
-}
-
-function placeStopOrderFor(position) {
-    if (position.positionAmt > 0) {
-        let stopPrice = parseFloat(parseFloat(position.entryPrice) + position.entryPrice / 100 * TARGET_PROFIT).toFixed(2)
-        placeSellOrder(stopPrice);
-    } else if (position.positionAmt < 0) {
-        let stopPrice = parseFloat(position.entryPrice - position.entryPrice / 100 * TARGET_PROFIT).toFixed(2);
-        placeBuyOrder(stopPrice);
     }
 }
 
@@ -265,46 +285,19 @@ function getPriceForecastBasedOnBidAskRatio() {
     for (let p of fpArray) {
         accu += p;
     }
-    //console.log(`Price forecast: ${accu}`);
     return accu;
-}
-
-function getMomentPriceTrend() {
-    let ptArray = PRICE_TICKERS.toarray();
-    let first = ptArray[5];
-    let last = ptArray[0];
-    let trend = computeDeltaInPcnt(first, last);
-    //console.log(`Moment trend: ${trend}`);
-    return trend;
-}
-
-function getGeneralPriceTrend() {
-    let ptArray = PRICE_TICKERS.toarray();
-    let first = ptArray[ptArray.length - 1];
-    let last = ptArray[0];
-    let trend = (last - first) / first * 100;
-    //console.log(`General trend: ${trend}`);
-    return trend;
-}
-
-function getPriceLocalMinimum() {
-    return Math.min(...PRICE_TICKERS.toarray());
-}
-
-function getPriceLocalMaximum() {
-    return Math.max(...PRICE_TICKERS.toarray());
 }
 
 function handleTradeAutoSwitcher() {
     if (document.getElementById("tradeAutoSwitcher").checked) {
         uiUtils.disableElement('ttQuantity');
-        //uiUtils.disableElement('buyInstrumentButton');
-        //uiUtils.disableElement('sellInstrumentButton');
+        uiUtils.disableElement('buyInstrumentButton');
+        uiUtils.disableElement('sellInstrumentButton');
         initCurrentPosition();
     } else {
         uiUtils.enableElement('ttQuantity');
-        //uiUtils.enableElement('buyInstrumentButton');
-        //uiUtils.enableElement('sellInstrumentButton');
+        uiUtils.enableElement('buyInstrumentButton');
+        uiUtils.enableElement('sellInstrumentButton');
         autoTradePnl = 0;
     }
 }
@@ -314,7 +307,7 @@ function placeBuyOrder(stopPrice) {
         if (!stopPrice) {
             orderLastPlaced = Date.now();
         } 
-        console.log('Buy order placed');
+        console.log('Placing buy order ...');
         dataManager.placeOrder(buildOrder('BUY', stopPrice), function (order) {
             if (!stopPrice) {
                 setTimeout(dataManager.cancelOrder, LIMIT_ORDER_PENDING_TIME, order);
@@ -328,12 +321,26 @@ function placeSellOrder(stopPrice) {
         if (!stopPrice) {
             orderLastPlaced = Date.now();
         } 
-        console.log('Sell order placed');
+        console.log('Placing sell order ...');
         dataManager.placeOrder(buildOrder('SELL', stopPrice), function (order) {
             if (!stopPrice) {
                 setTimeout(dataManager.cancelOrder, LIMIT_ORDER_PENDING_TIME, order);
             }
         });
+    }
+}
+
+function placeStopOrdersFor(position) {
+    if (position.positionAmt > 0) {
+        let stopLossPrice = parseFloat(parseFloat(position.entryPrice) - position.entryPrice / 100 * STOP_LOSS_PCNT).toFixed(2)
+        let takeProfitPrice = parseFloat(parseFloat(position.entryPrice) + position.entryPrice / 100 * TAKE_PROFIT_PCNT).toFixed(2)
+        placeSellOrder(stopLossPrice);
+        placeSellOrder(takeProfitPrice);
+    } else if (position.positionAmt < 0) {
+        let stopLossPrice = parseFloat(parseFloat(position.entryPrice) + position.entryPrice / 100 * STOP_LOSS_PCNT).toFixed(2)
+        let takeProfitPrice = parseFloat(parseFloat(position.entryPrice) - position.entryPrice / 100 * TAKE_PROFIT_PCNT).toFixed(2)
+        placeSellOrder(stopLossPrice);
+        placeSellOrder(takeProfitPrice);
     }
 }
 
@@ -361,14 +368,14 @@ function buildOrder(side, price) {
 
 function pollOrders(symbol) {
     dataManager.requestOrders(symbol, orders => {
-        //let filteredOrders = orders.filter(o => o.symbol === instrumentSymbol);
-        if (orders.length > 0) {
+        let filteredOrders = orders.filter(o => o.status === 'NEW');
+        if (filteredOrders.length > 0) {
             uiUtils.showElement("ttRemoveAllOrdersButton");
         } else {
             uiUtils.hideElement("ttRemoveAllOrdersButton");
         }
         document.getElementById("openOrdersDataGrid").innerHTML = '';
-        for (let order of orders) {
+        for (let order of filteredOrders) {
             let row = uiUtils.createTableRow();
             row.appendChild(uiUtils.createTextColumn(order.orderId));
             row.appendChild(uiUtils.createTextColumn(order.symbol));
