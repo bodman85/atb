@@ -50,7 +50,7 @@ window.onload = async function () {
     setInterval(dataManager.refreshListenKey, 600000);
 
     dataManager.pollPriceTickerFor(instrumentSymbol, ticker => {
-        currentPrice = ticker['c'];
+        currentPrice = parseFloat(ticker['c']);
 
         if (!dataManager.isEmpty(currentPosition)) {
             currentPosition.unRealizedProfit = computePnlPcntFor(currentPosition);
