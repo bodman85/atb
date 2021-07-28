@@ -200,7 +200,7 @@ function processUserDataStream(stream) {
         var obj = JSON.parse(strLines[i]);
         if (obj.e === 'ACCOUNT_UPDATE') {
             let position = {};
-            console.log(`Update received: ${JSON.stringify(obj.a.P)}`);
+            console.log(`Update event received: ${JSON.stringify(obj.a.P)}`);
             position.symbol = obj.a.P[0].s;
             position.positionAmt = obj.a.P[0].pa;
             position.entryPrice = obj.a.P[0].ep;
