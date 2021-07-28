@@ -11,9 +11,9 @@ const FORECAST_DELTA_EDGE_VALUE = 0.1;
 
 const TREND_DELTA_PCNT = 0.05;
 const TAKE_PROFIT_PCNT = 1;
-const STOP_LOSS_PCNT = 0.25;
+const STOP_LOSS_ORDER_PRICE_PCNT = 0.3;
+const STOP_LOSS_TRIGGER_PRICE_PCNT = 0.25;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
-const LIMIT_ORDER_PENDING_TIME = 5000;
 
 let FAIR_PRICE_DELTAS = new CircularBuffer(FORECAST_BUFFER_SIZE);
 
@@ -22,7 +22,6 @@ let currentBidPrice = 0;
 let currentAskPrice = 0;
 let totalPnlPcnt = 0;
 
-let orderLastPlaced = Date.now();
 let currentPosition = {};
 
 let trend_1m = 0;
@@ -33,21 +32,16 @@ let slidingAverage_4h = 0;
 
 window.onload = async function () {
     document.getElementById('ttInstrument').value = instrumentSymbol;
-    document.getElementById('buyInstrumentButton').addEventListener('click', function () { placeBuyOrder() });
-    document.getElementById('sellInstrumentButton').addEventListener('click', function () { placeSellOrder() });
+    document.getElementById('buyInstrumentButton').addEventListener('click', function () { placeOrder('BUY', 'MARKET') });
+    document.getElementById('sellInstrumentButton').addEventListener('click', function () { placeOrder('SELL', 'MARKET') });
     document.getElementById("ttRemoveAllOrdersButton").addEventListener("click", function () { dataManager.cancelAllOrdersFor(instrumentSymbol) });
 
     setInterval(function () { detectRapidPriceFall(instrumentSymbol) }, 3000);
 
     document.getElementById('tradeAutoSwitcher').addEventListener('click', handleTradeAutoSwitcher);
-    setInterval(initCurrentPosition, 10000);
-    setInterval(function () { pollOrders(instrumentSymbol) }, 2000);
+    setInterval(pollCurrentPosition, 10000);
+    setInterval(function () { pollOrders(instrumentSymbol) }, 5000);
     setInterval(displayCurrentPosition, 1000);
-
-    dataManager.pollUserDataStream(function (stream) {
-        processUserDataStream(stream);
-    });
-    setInterval(dataManager.refreshListenKey, 600000);
 
     dataManager.pollPriceTickerFor(instrumentSymbol, ticker => {
         currentPrice = parseFloat(ticker['c']);
@@ -71,22 +65,20 @@ window.onload = async function () {
         if (!currentPosition.positionAmt) { // No position
             if (isTrendAsc() && trend_1m > 0) {
                 printTrendInfo();
-                placeBuyOrder();
-                currentPosition.positionAmt = document.getElementById('ttQuantity').value;
-                console.log('Placing sell-stop-orders...');
-                let takeProfitPrice = parseFloat(currentPrice + TAKE_PROFIT_PCNT / 100 * currentPrice).toFixed(2);
-                let stopLossPrice = parseFloat(currentPrice - STOP_LOSS_PCNT / 100 * currentPrice).toFixed(2);
-                placeSellOrder(takeProfitPrice);
-                placeSellOrder(stopLossPrice);
+                placeOrder('BUY', 'MARKET');
+                let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_PCNT);
+                placeOrder('SELL', 'LIMIT', takeProfitPrice);
+                let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_ORDER_PRICE_PCNT);
+                let triggerPrice = addPcntDelta(currentPrice, -STOP_LOSS_TRIGGER_PRICE_PCNT);
+                placeOrder('SELL', 'STOP', stopLossPrice, triggerPrice);
             } else if (isTrendDesc() && trend_1m < 0) {
                 printTrendInfo();
-                placeSellOrder();
-                currentPosition.positionAmt = -1 * document.getElementById('ttQuantity').value;
-                console.log('Placing buy-stop-orders...');
-                let takeProfitPrice = parseFloat(currentPrice - TAKE_PROFIT_PCNT / 100 * currentPrice).toFixed(2);
-                let stopLossPrice = parseFloat(currentPrice + STOP_LOSS_PCNT / 100 * currentPrice).toFixed(2);
-                placeBuyOrder(takeProfitPrice);
-                placeBuyOrder(stopLossPrice);
+                placeOrder('SELL', 'MARKET');
+                let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_PCNT);
+                placeOrder('BUY', 'LIMIT', takeProfitPrice);
+                let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_ORDER_PRICE_PCNT);
+                let triggerPrice = addPcntDelta(currentPrice, STOP_LOSS_TRIGGER_PRICE_PCNT);
+                placeOrder('BUY', 'STOP', stopLossPrice, triggerPrice);
             }
         }
     }
@@ -98,7 +90,7 @@ window.onload = async function () {
 
     function detectRapidPriceFall() {
         if (!currentPosition.positionAmt) { // No position
-            if (getPcntChange(price3SecondsAgo, currentPrice) <= -0.2) {
+            if (getPcntDelta(price3SecondsAgo, currentPrice) <= -0.2) {
                 flatCounter = 0;
                 if (rapidPriceFallStart === 0) {
                     rapidPriceFallStart = price3SecondsAgo;
@@ -106,7 +98,7 @@ window.onload = async function () {
                 } else {
                     console.log(`Rapid price fall goes on`);
                 }
-            } else if (getPcntChange(price3SecondsAgo, currentPrice) >= 0.2) {
+            } else if (getPcntDelta(price3SecondsAgo, currentPrice) >= 0.2) {
                 flatCounter = 0;
                 if (rapidPriceFallStart !== 0) {
                     rapidPriceFallFinish = currentPrice;
@@ -122,16 +114,14 @@ window.onload = async function () {
             }
             if (rapidPriceFallFinish > 0) {
                 console.log(`Rapid fall finished with price ${rapidPriceFallFinish}`);
-                if (getPcntChange(rapidPriceFallStart, rapidPriceFallFinish) <= -0.5) {
+                if (getPcntDelta(rapidPriceFallStart, rapidPriceFallFinish) <= -0.5) {
                     if (document.getElementById("tradeAutoSwitcher").checked) {
+                        placeOrder('BUY', 'MARKET');
                         let takeProfitPrice = rapidPriceFallStart;
-                        let stopLossPrice = parseFloat(rapidPriceFallFinish - STOP_LOSS_PCNT / 100 * rapidPriceFallFinish).toFixed(2);
-                        console.log(`Opening Long position with stop orders...`);
-                        placeBuyOrder();
-                        currentPosition.positionAmt = document.getElementById('ttQuantity').value;
-                        onsole.log('Placing sell-stop-orders...');
-                        placeSellOrder(takeProfitPrice);
-                        placeSellOrder(stopLossPrice);
+                        placeOrder('SELL', 'LIMIT', takeProfitPrice);
+                        let stopLossPrice = addPcntDelta(rapidPriceFallFinish, -STOP_LOSS_ORDER_PRICE_PCNT);
+                        let triggerPrice = addPcntDelta(rapidPriceFallFinish, -STOP_LOSS_TRIGGER_PRICE_PCNT);
+                        placeOrder('SELL', 'STOP', stopLossPrice, triggerPrice);
                     }
                 } else {
                     console.log(`Rapid price fall was insignificant. No position will be opened.`);
@@ -164,7 +154,7 @@ window.onload = async function () {
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '1m', kline => {
-        trend_1m = getPcntChange(kline.k['o'], kline.k['c']);
+        trend_1m = getPcntDelta(kline.k['o'], kline.k['c']);
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '30m', kline => {
@@ -182,65 +172,44 @@ window.onload = async function () {
 
 function isTrendAsc() {
     return slidingAverage_30m > 0 && slidingAverage_1h > 0 && slidingAverage_4h > 0
-        && getPcntChange(slidingAverage_30m, slidingAverage_1h) >= TREND_DELTA_PCNT
-        && getPcntChange(slidingAverage_1h, slidingAverage_4h) >= TREND_DELTA_PCNT
+        && getPcntDelta(slidingAverage_30m, slidingAverage_1h) >= TREND_DELTA_PCNT
+        && getPcntDelta(slidingAverage_1h, slidingAverage_4h) >= TREND_DELTA_PCNT
 }
 
 function isTrendDesc() {
     return slidingAverage_30m > 0 && slidingAverage_1h > 0 && slidingAverage_4h > 0
-        && getPcntChange(slidingAverage_30m, slidingAverage_1h) <= -TREND_DELTA_PCNT
-        && getPcntChange(slidingAverage_1h, slidingAverage_4h) <= -TREND_DELTA_PCNT
+        && getPcntDelta(slidingAverage_30m, slidingAverage_1h) <= -TREND_DELTA_PCNT
+        && getPcntDelta(slidingAverage_1h, slidingAverage_4h) <= -TREND_DELTA_PCNT
 }
 
-function getPcntChange(oldValue, newValue) {
+function getPcntDelta(oldValue, newValue) {
     return ((newValue - oldValue) / oldValue) * 100;
+}
+
+function addPcntDelta(value, delta) {
+    return parseFloat(value + delta / 100 * value).toFixed(2);
 }
 
 function computeAverage(first, second) {
     return ((first * 1 + second * 1) / 2);
 }
 
-function processUserDataStream(stream) {
-    var strLines = JSON.stringify(stream).split("\n");
-    for (var i in strLines) {
-        var obj = JSON.parse(strLines[i]);
-        if (obj.e === 'ACCOUNT_UPDATE') {
-            let position = {};
-            console.log(`Update event received: ${JSON.stringify(obj.a.P)}`);
-            position.symbol = obj.a.P[0].s;
-            position.positionAmt = obj.a.P[0].pa;
-            position.entryPrice = obj.a.P[0].ep;
-            if (position.positionAmt == 0) {
-                //console.log('Position closed. Cancelling all open orders');
-                //dataManager.cancelAllOrdersFor(instrumentSymbol);
-                totalPnlPcnt += parseFloat(currentPosition.unRealizedProfit);
-            } else {
-                console.log('Position opened.');
-                //placeStopOrdersFor(position);
-            }
-            updateCurrentPosition(position.symbol, position.positionAmt, position.entryPrice, computePnlPcntFor(position))
-        }
-    }
-}
-
-function initCurrentPosition() {
+function pollCurrentPosition() {
     dataManager.requestPositions(positions => {
         let targetPositions = positions.filter(p => parseFloat(p.unRealizedProfit) !== 0 && instrumentSymbol === p.symbol);
         if (targetPositions.length == 0) {
+            totalPnlPcnt += parseFloat(currentPosition.unRealizedProfit);
             currentPosition = {};
+            //Cancelling all pending limit orders...
             dataManager.cancelAllOrdersFor(instrumentSymbol);
         } else {
             let position = targetPositions[0];
-            updateCurrentPosition(position.symbol, position.positionAmt, position.entryPrice, computePnlPcntFor(position));
+            currentPosition.symbol = position.symbol;
+            currentPosition.positionAmt = position.positionAmt;
+            currentPosition.entryPrice = position.entryPrice;
+            currentPosition.unRealizedProfit = computePnlPcntFor(position);
         }
     });
-}
-
-function updateCurrentPosition(s, pa, ep, up) {
-    currentPosition.symbol = s;
-    currentPosition.positionAmt = pa;
-    currentPosition.entryPrice = ep;
-    currentPosition.unRealizedProfit = up;
 }
 
 function hasAmount(position) {
@@ -291,62 +260,15 @@ function handleTradeAutoSwitcher() {
         uiUtils.disableElement('ttQuantity');
         uiUtils.disableElement('buyInstrumentButton');
         uiUtils.disableElement('sellInstrumentButton');
-        initCurrentPosition();
+        pollCurrentPosition();
     } else {
         uiUtils.enableElement('ttQuantity');
         uiUtils.enableElement('buyInstrumentButton');
         uiUtils.enableElement('sellInstrumentButton');
-        autoTradePnl = 0;
     }
 }
 
-function placeBuyOrder(stopPrice) {
-    if (stopPrice || (Date.now() - orderLastPlaced >= LIMIT_ORDER_PENDING_TIME)) {
-        if (!stopPrice) {
-            orderLastPlaced = Date.now();
-        }
-        console.log('Placing buy order ...');
-        dataManager.placeOrder(buildOrder('BUY', stopPrice), function (order) {
-            if (!stopPrice) {
-                setTimeout(dataManager.cancelOrder, LIMIT_ORDER_PENDING_TIME, order);
-            }
-        });
-    }
-}
-
-function placeSellOrder(stopPrice) {
-    if (stopPrice || (Date.now() - orderLastPlaced >= LIMIT_ORDER_PENDING_TIME)) {
-        if (!stopPrice) {
-            orderLastPlaced = Date.now();
-        }
-        console.log('Placing sell order ...');
-        dataManager.placeOrder(buildOrder('SELL', stopPrice), function (order) {
-            if (!stopPrice) {
-                setTimeout(dataManager.cancelOrder, LIMIT_ORDER_PENDING_TIME, order);
-            }
-        });
-    }
-}
-
-function placeStopOrdersFor(position) {
-    if (position.positionAmt > 0) {
-        let stopLossPrice = parseFloat(parseFloat(position.entryPrice) - position.entryPrice / 100 * STOP_LOSS_PCNT).toFixed(2)
-        let takeProfitPrice = parseFloat(parseFloat(position.entryPrice) + position.entryPrice / 100 * TAKE_PROFIT_PCNT).toFixed(2)
-        placeSellOrder(stopLossPrice);
-        placeSellOrder(takeProfitPrice);
-    } else if (position.positionAmt < 0) {
-        let stopLossPrice = parseFloat(parseFloat(position.entryPrice) + position.entryPrice / 100 * STOP_LOSS_PCNT).toFixed(2)
-        let takeProfitPrice = parseFloat(parseFloat(position.entryPrice) - position.entryPrice / 100 * TAKE_PROFIT_PCNT).toFixed(2)
-        placeSellOrder(stopLossPrice);
-        placeSellOrder(takeProfitPrice);
-    }
-}
-
-function buildOrder(side, price) {
-    let type = 'MARKET';
-    if (price || document.getElementById("limitOrdersAutoSwitcher").checked) {
-        type = 'LIMIT';
-    }
+function placeOrder(side, type, price, stopPrice) {
     let order = {
         side: side,
         symbol: instrumentSymbol,
@@ -354,14 +276,24 @@ function buildOrder(side, price) {
         type: type,
         recvWindow: 30000
     }
-    if (type === 'LIMIT') {
-        let orderPrice = price ? price : currentBidPrice; //bid and ask prices swapped intentionally to speed-up limit orders execution
+    if (type === 'MARKET') {
+        currentPosition.positionAmt = order.quantity;
+        if (side === 'SELL') {
+            currentPosition.positionAmt *= -1;
+        }
+    } else if (type === 'LIMIT') {
+        let orderPrice = price ? price : currentBidPrice; //bid and ask prices swapped intentionally to execute limit orders immediately
         if (side === 'BUY') {
             orderPrice = price ? price : currentAskPrice;
         }
         Object.assign(order, { price: orderPrice, timeInForce: 'GTC' });
+    } else if (type === 'STOP') {
+        let orderPrice = price;
+        let triggerPrice = stopPrice;
+        Object.assign(order, { price: orderPrice, stopPrice: triggerPrice, timeInForce: 'GTC' });
     }
-    return order;
+    console.log(`Placing ${type} ${side} order...`);
+    dataManager.placeOrder(order);
 }
 
 function pollOrders(symbol) {

@@ -100,6 +100,8 @@ function placeOrder(order, callback) {
     let queryString = `symbol=${order.symbol}&side=${order.side}&type=${order.type}&quantity=${order.quantity}&timeStamp=${Date.now()}&recvWindow=${order.recvWindow}`;
     if (order.type.toUpperCase() === 'LIMIT') {
         queryString += `&price=${order.price}&timeInForce=${order.timeInForce}`;
+    } else if (order.type.toUpperCase() === 'STOP') {
+        queryString += `&price=${order.price}&stopPrice=${order.stopPrice}&timeInForce=${order.timeInForce}`;
     }
     queryString += sign(queryString);
     firePostRequestWithCallback(ORDER + '?' + queryString, callback);
