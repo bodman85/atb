@@ -190,7 +190,7 @@ function pollKlinesFor(symbol, interval, callback) {
 
 function pollUserDataStream(callback) {
     firePostRequestWithCallback(LISTEN_KEY, function (resp) {
-        //console.log(resp.listenKey);
+        console.log(resp.listenKey);
         const ws = new W3CWebSocket(`${WEBSOCKET_URL}${resp.listenKey}`);
         ws.onmessage = function (e) {
             let data = JSON.parse(e.data);
