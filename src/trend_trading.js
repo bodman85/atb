@@ -72,6 +72,7 @@ window.onload = async function () {
             if (isTrendAsc() && trend_1m > 0) {
                 printTrendInfo();
                 placeBuyOrder();
+                currentPosition.positionAmt = document.getElementById('ttQuantity').value;
                 console.log('Placing sell-stop-orders...');
                 let takeProfitPrice = parseFloat(currentPrice + TAKE_PROFIT_PCNT / 100 * currentPrice).toFixed(2);
                 let stopLossPrice = parseFloat(currentPrice - STOP_LOSS_PCNT / 100 * currentPrice).toFixed(2);
@@ -80,6 +81,7 @@ window.onload = async function () {
             } else if (isTrendDesc() && trend_1m < 0) {
                 printTrendInfo();
                 placeSellOrder();
+                currentPosition.positionAmt = -1 * document.getElementById('ttQuantity').value;
                 console.log('Placing buy-stop-orders...');
                 let takeProfitPrice = parseFloat(currentPrice - TAKE_PROFIT_PCNT / 100 * currentPrice).toFixed(2);
                 let stopLossPrice = parseFloat(currentPrice + STOP_LOSS_PCNT / 100 * currentPrice).toFixed(2);
@@ -126,6 +128,7 @@ window.onload = async function () {
                         let stopLossPrice = parseFloat(rapidPriceFallFinish - STOP_LOSS_PCNT / 100 * rapidPriceFallFinish).toFixed(2);
                         console.log(`Opening Long position with stop orders...`);
                         placeBuyOrder();
+                        currentPosition.positionAmt = document.getElementById('ttQuantity').value;
                         onsole.log('Placing sell-stop-orders...');
                         placeSellOrder(takeProfitPrice);
                         placeSellOrder(stopLossPrice);
@@ -178,11 +181,14 @@ window.onload = async function () {
 }
 
 function isTrendAsc() {
-    return getPcntChange(slidingAverage_30m, slidingAverage_1h) >= TREND_DELTA_PCNT
+    return slidingAverage_30m > 0 && slidingAverage_1h > 0 && slidingAverage_4h > 0
+        && getPcntChange(slidingAverage_30m, slidingAverage_1h) >= TREND_DELTA_PCNT
         && getPcntChange(slidingAverage_1h, slidingAverage_4h) >= TREND_DELTA_PCNT
 }
+
 function isTrendDesc() {
-    return getPcntChange(slidingAverage_30m, slidingAverage_1h) <= -TREND_DELTA_PCNT
+    return slidingAverage_30m > 0 && slidingAverage_1h > 0 && slidingAverage_4h > 0
+        && getPcntChange(slidingAverage_30m, slidingAverage_1h) <= -TREND_DELTA_PCNT
         && getPcntChange(slidingAverage_1h, slidingAverage_4h) <= -TREND_DELTA_PCNT
 }
 
@@ -205,8 +211,8 @@ function processUserDataStream(stream) {
             position.positionAmt = obj.a.P[0].pa;
             position.entryPrice = obj.a.P[0].ep;
             if (position.positionAmt == 0) {
-                console.log('Position closed. Cancelling all open orders');
-                dataManager.cancelAllOrdersFor(instrumentSymbol);
+                //console.log('Position closed. Cancelling all open orders');
+                //dataManager.cancelAllOrdersFor(instrumentSymbol);
                 totalPnlPcnt += parseFloat(currentPosition.unRealizedProfit);
             } else {
                 console.log('Position opened.');
@@ -222,6 +228,7 @@ function initCurrentPosition() {
         let targetPositions = positions.filter(p => parseFloat(p.unRealizedProfit) !== 0 && instrumentSymbol === p.symbol);
         if (targetPositions.length == 0) {
             currentPosition = {};
+            dataManager.cancelAllOrdersFor(instrumentSymbol);
         } else {
             let position = targetPositions[0];
             updateCurrentPosition(position.symbol, position.positionAmt, position.entryPrice, computePnlPcntFor(position));
