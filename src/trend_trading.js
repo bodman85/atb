@@ -192,6 +192,9 @@ window.onload = async function () {
 
     dataManager.pollKlinesFor(instrumentSymbol, '4h', kline => {
         slidingAverage3 = computeAverage(kline.k['o'], kline.k['c']);
+    });
+
+    dataManager.pollKlinesFor(instrumentSymbol, '8h', kline => {
         previousMin = kline.k['l'];
         previousMax = kline.k['h'];
     });
