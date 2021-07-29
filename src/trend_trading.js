@@ -65,7 +65,7 @@ window.onload = async function () {
 
     function autoTrade() {
         if (!currentPosition.positionAmt) { // No position opened
-            if (isTrendDesc() && trend_1m < 0 && rapidPriceFallStart === 0) { // Das Experiment: Vica-versa
+            if (isTrendDesc()) { // Das Experiment: Vica-versa
                 printTrendInfo();
                 placeOrder('BUY', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
@@ -73,7 +73,7 @@ window.onload = async function () {
                 let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_ORDER_PRICE_PCNT);
                 let triggerPrice = addPcntDelta(currentPrice, -STOP_LOSS_TRIGGER_PRICE_PCNT);
                 placeOrder('SELL', 'STOP', stopLossPrice, triggerPrice);
-            } else if (isTrendAsc() && trend_1m > 0) { // Das Experiment: Vica-versa
+            } else if (isTrendAsc()) { // Das Experiment: Vica-versa
                 printTrendInfo();
                 placeOrder('SELL', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
@@ -181,12 +181,14 @@ function isTrendAsc() {
     return slidingAverage1 > 0 && slidingAverage2 > 0 && slidingAverage3 > 0
         && getPcntDelta(slidingAverage2, slidingAverage1) >= TREND_DELTA_PCNT
         && getPcntDelta(slidingAverage3, slidingAverage2) >= TREND_DELTA_PCNT
+        && trend_1m > 0
 }
 
 function isTrendDesc() {
     return slidingAverage1 > 0 && slidingAverage2 > 0 && slidingAverage3 > 0
         && getPcntDelta(slidingAverage1, slidingAverage2) >= TREND_DELTA_PCNT
         && getPcntDelta(slidingAverage2, slidingAverage3) >= TREND_DELTA_PCNT
+        && trend_1m < 0 && rapidPriceFallStart === 0
 }
 
 function getPcntDelta(oldValue, newValue) {
