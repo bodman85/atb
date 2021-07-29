@@ -10,7 +10,7 @@ const FORECAST_BUFFER_SIZE = 10;
 const FORECAST_DELTA_EDGE_VALUE = 0.1;
 
 const TREND_DELTA_PCNT = 0.05;
-const TAKE_PROFIT_PCNT = 0.5;
+const TAKE_PROFIT_PCNT = 0.75;
 const STOP_LOSS_ORDER_PRICE_PCNT = 0.3;
 const STOP_LOSS_TRIGGER_PRICE_PCNT = 0.25;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
@@ -62,7 +62,7 @@ window.onload = async function () {
     });
 
     function autoTrade() {
-        if (!currentPosition.positionAmt) { // No position
+        if (!currentPosition.positionAmt) { // No position opened
             if (isTrendAsc() && trend_1m > 0) {
                 printTrendInfo();
                 placeOrder('BUY', 'MARKET');
@@ -71,7 +71,7 @@ window.onload = async function () {
                 let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_ORDER_PRICE_PCNT);
                 let triggerPrice = addPcntDelta(currentPrice, -STOP_LOSS_TRIGGER_PRICE_PCNT);
                 placeOrder('SELL', 'STOP', stopLossPrice, triggerPrice);
-            } else if (isTrendDesc() && trend_1m < 0) {
+            } else if (isTrendDesc() && trend_1m < 0 && rapidPriceFallStart === 0) {
                 printTrendInfo();
                 placeOrder('SELL', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_PCNT);
@@ -80,6 +80,11 @@ window.onload = async function () {
                 let triggerPrice = addPcntDelta(currentPrice, STOP_LOSS_TRIGGER_PRICE_PCNT);
                 placeOrder('BUY', 'STOP', stopLossPrice, triggerPrice);
             }
+        } else if (currentPosition.positionAmt > 0 && isTrendDesc()) { // Long position opened
+            placeOrder('SELL', 'LIMIT');
+
+        } else if (currentPosition.positionAmt < 0 && isTrendAsc()) {// Short position opened
+            placeOrder('BUY', 'LIMIT');
         }
     }
 
