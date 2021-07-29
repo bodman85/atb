@@ -179,14 +179,14 @@ window.onload = async function () {
 
 function isTrendAsc() {
     return slidingAverage_30m > 0 && slidingAverage_1h > 0 && slidingAverage_4h > 0
-        && getPcntDelta(slidingAverage_30m, slidingAverage_1h) >= TREND_DELTA_PCNT
-        && getPcntDelta(slidingAverage_1h, slidingAverage_4h) >= TREND_DELTA_PCNT
+        && getPcntDelta(slidingAverage_1h, slidingAverage_30m) >= TREND_DELTA_PCNT
+        && getPcntDelta(slidingAverage_4h, slidingAverage_1h) >= TREND_DELTA_PCNT
 }
 
 function isTrendDesc() {
     return slidingAverage_30m > 0 && slidingAverage_1h > 0 && slidingAverage_4h > 0
-        && getPcntDelta(slidingAverage_30m, slidingAverage_1h) <= -TREND_DELTA_PCNT
-        && getPcntDelta(slidingAverage_1h, slidingAverage_4h) <= -TREND_DELTA_PCNT
+        && getPcntDelta(slidingAverage_30m, slidingAverage_1h) >= TREND_DELTA_PCNT
+        && getPcntDelta(slidingAverage_1h, slidingAverage_4h) >= TREND_DELTA_PCNT
 }
 
 function getPcntDelta(oldValue, newValue) {
