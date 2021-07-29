@@ -27,9 +27,9 @@ let totalPnlPcnt = 0;
 let currentPosition = {};
 
 let trend_1m = 0;
-let slidingAverage_30m = 0;
-let slidingAverage_1h = 0;
-let slidingAverage_4h = 0;
+let slidingAverage1 = 0;
+let slidingAverage2 = 0;
+let slidingAverage3 = 0;
 
 
 window.onload = async function () {
@@ -142,14 +142,14 @@ window.onload = async function () {
     }
 
     function printTrendInfo() {
-        console.log(`slidingAverage_30m: ${slidingAverage_30m}`);
-        console.log(`slidingAverage_1h: ${slidingAverage_1h}`);
-        console.log(`slidingAverage_4h: ${slidingAverage_4h}`);
+        console.log(`slidingAverage1: ${slidingAverage1}`);
+        console.log(`slidingAverage2: ${slidingAverage2}`);
+        console.log(`slidingAverage3: ${slidingAverage3}`);
     }
 
     dataManager.pollDepthFor(instrumentSymbol, data => {
         document.getElementById('priceTrend').value = isTrendAsc() ? 'ASC' : isTrendDesc() ? 'DESC' : 'FLAT';
-        uiUtils.paintRedOrGreen(slidingAverage_1h - slidingAverage_4h, 'priceTrend');
+        uiUtils.paintRedOrGreen(slidingAverage2 - slidingAverage3, 'priceTrend');
 
         let fairPriceDelta = parseFloat((computeFairPrice(data) - currentPrice) / currentPrice * 100);
         FAIR_PRICE_DELTAS.enq(fairPriceDelta);
@@ -164,29 +164,29 @@ window.onload = async function () {
         trend_1m = getPcntDelta(kline.k['o'], kline.k['c']);
     });
 
+    dataManager.pollKlinesFor(instrumentSymbol, '5m', kline => {
+        slidingAverage1 = computeAverage(kline.k['o'], kline.k['c']);
+    });
+
+    dataManager.pollKlinesFor(instrumentSymbol, '15m', kline => {
+        slidingAverage2 = computeAverage(kline.k['o'], kline.k['c']);
+    });
+
     dataManager.pollKlinesFor(instrumentSymbol, '30m', kline => {
-        slidingAverage_30m = computeAverage(kline.k['o'], kline.k['c']);
-    });
-
-    dataManager.pollKlinesFor(instrumentSymbol, '1h', kline => {
-        slidingAverage_1h = computeAverage(kline.k['o'], kline.k['c']);
-    });
-
-    dataManager.pollKlinesFor(instrumentSymbol, '4h', kline => {
-        slidingAverage_4h = computeAverage(kline.k['o'], kline.k['c']);
+        slidingAverage3 = computeAverage(kline.k['o'], kline.k['c']);
     });
 }
 
 function isTrendAsc() {
-    return slidingAverage_30m > 0 && slidingAverage_1h > 0 && slidingAverage_4h > 0
-        && getPcntDelta(slidingAverage_1h, slidingAverage_30m) >= TREND_DELTA_PCNT
-        && getPcntDelta(slidingAverage_4h, slidingAverage_1h) >= TREND_DELTA_PCNT
+    return slidingAverage1 > 0 && slidingAverage2 > 0 && slidingAverage3 > 0
+        && getPcntDelta(slidingAverage2, slidingAverage1) >= TREND_DELTA_PCNT
+        && getPcntDelta(slidingAverage3, slidingAverage2) >= TREND_DELTA_PCNT
 }
 
 function isTrendDesc() {
-    return slidingAverage_30m > 0 && slidingAverage_1h > 0 && slidingAverage_4h > 0
-        && getPcntDelta(slidingAverage_30m, slidingAverage_1h) >= TREND_DELTA_PCNT
-        && getPcntDelta(slidingAverage_1h, slidingAverage_4h) >= TREND_DELTA_PCNT
+    return slidingAverage1 > 0 && slidingAverage2 > 0 && slidingAverage3 > 0
+        && getPcntDelta(slidingAverage1, slidingAverage2) >= TREND_DELTA_PCNT
+        && getPcntDelta(slidingAverage2, slidingAverage3) >= TREND_DELTA_PCNT
 }
 
 function getPcntDelta(oldValue, newValue) {
