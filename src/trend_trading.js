@@ -10,7 +10,9 @@ const FORECAST_BUFFER_SIZE = 10;
 const FORECAST_DELTA_EDGE_VALUE = 0.1;
 
 const TREND_DELTA_PCNT = 0.05;
-const TAKE_PROFIT_PCNT = 0.75;
+const RAPID_FALL_DELTA_PCNT = 0.2;
+const TAKE_PROFIT_FOLLOW_TREND_PCNT = 0.75;
+const TAKE_PROFIT_RAPID_FALL_PCNT = 0.5;
 const STOP_LOSS_ORDER_PRICE_PCNT = 0.3;
 const STOP_LOSS_TRIGGER_PRICE_PCNT = 0.25;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
@@ -66,7 +68,7 @@ window.onload = async function () {
             if (isTrendAsc() && trend_1m > 0) {
                 printTrendInfo();
                 placeOrder('BUY', 'MARKET');
-                let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_PCNT);
+                let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
                 placeOrder('SELL', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_ORDER_PRICE_PCNT);
                 let triggerPrice = addPcntDelta(currentPrice, -STOP_LOSS_TRIGGER_PRICE_PCNT);
@@ -74,7 +76,7 @@ window.onload = async function () {
             } else if (isTrendDesc() && trend_1m < 0 && rapidPriceFallStart === 0) {
                 printTrendInfo();
                 placeOrder('SELL', 'MARKET');
-                let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_PCNT);
+                let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
                 placeOrder('BUY', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_ORDER_PRICE_PCNT);
                 let triggerPrice = addPcntDelta(currentPrice, STOP_LOSS_TRIGGER_PRICE_PCNT);
@@ -95,7 +97,7 @@ window.onload = async function () {
 
     function detectRapidPriceFall() {
         if (!currentPosition.positionAmt) { // No position
-            if (getPcntDelta(price3SecondsAgo, currentPrice) <= -0.2) {
+            if (getPcntDelta(price3SecondsAgo, currentPrice) <= -RAPID_FALL_DELTA_PCNT) {
                 flatCounter = 0;
                 if (rapidPriceFallStart === 0) {
                     rapidPriceFallStart = price3SecondsAgo;
@@ -103,7 +105,7 @@ window.onload = async function () {
                 } else {
                     console.log(`Rapid price fall goes on`);
                 }
-            } else if (getPcntDelta(price3SecondsAgo, currentPrice) >= 0.2) {
+            } else if (getPcntDelta(price3SecondsAgo, currentPrice) >= RAPID_FALL_DELTA_PCNT / 2) {
                 flatCounter = 0;
                 if (rapidPriceFallStart !== 0) {
                     rapidPriceFallFinish = currentPrice;
@@ -119,7 +121,7 @@ window.onload = async function () {
             }
             if (rapidPriceFallFinish > 0) {
                 console.log(`Rapid fall finished with price ${rapidPriceFallFinish}`);
-                if (getPcntDelta(rapidPriceFallStart, rapidPriceFallFinish) <= -0.5) {
+                if (getPcntDelta(rapidPriceFallStart, rapidPriceFallFinish) <= -TAKE_PROFIT_RAPID_FALL_PCNT) {
                     if (document.getElementById("tradeAutoSwitcher").checked) {
                         placeOrder('BUY', 'MARKET');
                         let takeProfitPrice = rapidPriceFallStart;
