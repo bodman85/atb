@@ -65,7 +65,7 @@ window.onload = async function () {
 
     function autoTrade() {
         if (!currentPosition.positionAmt) { // No position opened
-            if (isTrendAsc() && trend_1m > 0) {
+            if (isTrendDesc() && trend_1m < 0 && rapidPriceFallStart === 0) { // Das Experiment: Vica-versa
                 printTrendInfo();
                 placeOrder('BUY', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
@@ -73,7 +73,7 @@ window.onload = async function () {
                 let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_ORDER_PRICE_PCNT);
                 let triggerPrice = addPcntDelta(currentPrice, -STOP_LOSS_TRIGGER_PRICE_PCNT);
                 placeOrder('SELL', 'STOP', stopLossPrice, triggerPrice);
-            } else if (isTrendDesc() && trend_1m < 0 && rapidPriceFallStart === 0) {
+            } else if (isTrendAsc() && trend_1m > 0) { // Das Experiment: Vica-versa
                 printTrendInfo();
                 placeOrder('SELL', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
