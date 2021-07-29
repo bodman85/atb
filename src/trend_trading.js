@@ -65,7 +65,7 @@ window.onload = async function () {
 
     function autoTrade() {
         if (!currentPosition.positionAmt) { // No position opened
-            if (isTrendDesc()) { // Das Experiment: Vica-versa
+            if (isTrendAsc()) {
                 printTrendInfo();
                 placeOrder('BUY', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
@@ -73,7 +73,7 @@ window.onload = async function () {
                 let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_ORDER_PRICE_PCNT);
                 let triggerPrice = addPcntDelta(currentPrice, -STOP_LOSS_TRIGGER_PRICE_PCNT);
                 placeOrder('SELL', 'STOP', stopLossPrice, triggerPrice);
-            } else if (isTrendAsc()) { // Das Experiment: Vica-versa
+            } else if (isTrendDesc()) {
                 printTrendInfo();
                 placeOrder('SELL', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
@@ -164,15 +164,15 @@ window.onload = async function () {
         trend_1m = getPcntDelta(kline.k['o'], kline.k['c']);
     });
 
-    dataManager.pollKlinesFor(instrumentSymbol, '1m', kline => {
+    dataManager.pollKlinesFor(instrumentSymbol, '1h', kline => {
         slidingAverage1 = computeAverage(kline.k['o'], kline.k['c']);
     });
 
-    dataManager.pollKlinesFor(instrumentSymbol, '3m', kline => {
+    dataManager.pollKlinesFor(instrumentSymbol, '2h', kline => {
         slidingAverage2 = computeAverage(kline.k['o'], kline.k['c']);
     });
 
-    dataManager.pollKlinesFor(instrumentSymbol, '5m', kline => {
+    dataManager.pollKlinesFor(instrumentSymbol, '4h', kline => {
         slidingAverage3 = computeAverage(kline.k['o'], kline.k['c']);
     });
 }
