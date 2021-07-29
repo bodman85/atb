@@ -164,15 +164,15 @@ window.onload = async function () {
         trend_1m = getPcntDelta(kline.k['o'], kline.k['c']);
     });
 
-    dataManager.pollKlinesFor(instrumentSymbol, '5m', kline => {
+    dataManager.pollKlinesFor(instrumentSymbol, '1m', kline => {
         slidingAverage1 = computeAverage(kline.k['o'], kline.k['c']);
     });
 
-    dataManager.pollKlinesFor(instrumentSymbol, '15m', kline => {
+    dataManager.pollKlinesFor(instrumentSymbol, '3m', kline => {
         slidingAverage2 = computeAverage(kline.k['o'], kline.k['c']);
     });
 
-    dataManager.pollKlinesFor(instrumentSymbol, '30m', kline => {
+    dataManager.pollKlinesFor(instrumentSymbol, '5m', kline => {
         slidingAverage3 = computeAverage(kline.k['o'], kline.k['c']);
     });
 }
