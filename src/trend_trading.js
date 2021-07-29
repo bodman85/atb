@@ -13,8 +13,8 @@ const TREND_DELTA_PCNT = 0.025;
 const RAPID_FALL_DELTA_PCNT = 0.2;
 const TAKE_PROFIT_FOLLOW_TREND_PCNT = 0.5;
 const TAKE_PROFIT_RAPID_FALL_PCNT = 0.5;
-const STOP_LOSS_ORDER_PRICE_PCNT = 0.3;
-const STOP_LOSS_TRIGGER_PRICE_PCNT = 0.25;
+const TAKE_PROFIT_SWING_IN_CHANNEL_PCNT = 0.5;
+const STOP_LOSS_PRICE_PCNT = 0.3;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
 
 let FAIR_PRICE_DELTAS = new CircularBuffer(FORECAST_BUFFER_SIZE);
@@ -30,6 +30,8 @@ let trend_1m = 0;
 let slidingAverage1 = 0;
 let slidingAverage2 = 0;
 let slidingAverage3 = 0;
+let previousMin = 0;
+let previousMax = 0;
 
 
 window.onload = async function () {
@@ -67,20 +69,37 @@ window.onload = async function () {
         if (!currentPosition.positionAmt) { // No position opened
             if (isTrendAsc()) {
                 printTrendInfo();
+                console.log(`Ascending trend started`);
                 placeOrder('BUY', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
                 placeOrder('SELL', 'LIMIT', takeProfitPrice);
-                let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_ORDER_PRICE_PCNT);
-                let triggerPrice = addPcntDelta(currentPrice, -STOP_LOSS_TRIGGER_PRICE_PCNT);
-                placeOrder('SELL', 'STOP', stopLossPrice, triggerPrice);
+                let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
+                placeOrder('SELL', 'STOP', stopLossPrice);
             } else if (isTrendDesc()) {
                 printTrendInfo();
+                console.log(`Descending trend started`);
                 placeOrder('SELL', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
                 placeOrder('BUY', 'LIMIT', takeProfitPrice);
-                let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_ORDER_PRICE_PCNT);
-                let triggerPrice = addPcntDelta(currentPrice, STOP_LOSS_TRIGGER_PRICE_PCNT);
-                placeOrder('BUY', 'STOP', stopLossPrice, triggerPrice);
+                let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
+                placeOrder('BUY', 'STOP', stopLossPrice);
+            } else {
+                //price is swinging in channel
+                if (previousMin > 0 && currentPrice < previousMin) {
+                    console.log(`Price reached bottom of Channel`);
+                    placeOrder('BUY', 'MARKET');
+                    let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
+                    placeOrder('SELL', 'LIMIT', takeProfitPrice);
+                    let stopLossPrice = currentPrice - (previousMin + previousMax) / 2;
+                    placeOrder('SELL', 'STOP', stopLossPrice);
+                } else if (previousMax > 0 && currentPrice > previousMax) {
+                    console.log(`Price reached top of Channel`);
+                    placeOrder('SELL', 'MARKET');
+                    let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
+                    placeOrder('BUY', 'LIMIT', takeProfitPrice);
+                    let stopLossPrice = currentPrice + (previousMin + previousMax) / 2;
+                    placeOrder('BUY', 'STOP', stopLossPrice);
+                }
             }
         } else if (currentPosition.positionAmt > 0 && isTrendDesc()) { // Long position opened
             placeOrder('SELL', 'LIMIT');
@@ -126,9 +145,8 @@ window.onload = async function () {
                         placeOrder('BUY', 'MARKET');
                         let takeProfitPrice = rapidPriceFallStart;
                         placeOrder('SELL', 'LIMIT', takeProfitPrice);
-                        let stopLossPrice = addPcntDelta(rapidPriceFallFinish, -STOP_LOSS_ORDER_PRICE_PCNT);
-                        let triggerPrice = addPcntDelta(rapidPriceFallFinish, -STOP_LOSS_TRIGGER_PRICE_PCNT);
-                        placeOrder('SELL', 'STOP', stopLossPrice, triggerPrice);
+                        let stopLossPrice = addPcntDelta(rapidPriceFallFinish, -STOP_LOSS_PRICE_PCNT);
+                        placeOrder('SELL', 'STOP', stopLossPrice);
                     }
                 } else {
                     console.log(`Rapid price fall was insignificant. No position will be opened.`);
@@ -174,6 +192,8 @@ window.onload = async function () {
 
     dataManager.pollKlinesFor(instrumentSymbol, '4h', kline => {
         slidingAverage3 = computeAverage(kline.k['o'], kline.k['c']);
+        previousMin = kline.k['l'];
+        previousMax = kline.k['h'];
     });
 }
 
@@ -277,7 +297,7 @@ function handleTradeAutoSwitcher() {
     }
 }
 
-function placeOrder(side, type, price, stopPrice) {
+function placeOrder(side, type, price) {
     let order = {
         side: side,
         symbol: instrumentSymbol,
@@ -297,9 +317,7 @@ function placeOrder(side, type, price, stopPrice) {
         }
         Object.assign(order, { price: orderPrice, timeInForce: 'GTC' });
     } else if (type === 'STOP') {
-        let orderPrice = price;
-        let triggerPrice = stopPrice;
-        Object.assign(order, { price: orderPrice, stopPrice: triggerPrice, timeInForce: 'GTC' });
+        Object.assign(order, { price: price, stopPrice: price, timeInForce: 'GTC' });
     }
     console.log(`Placing ${type} ${side} order...`);
     dataManager.placeOrder(order);
