@@ -109,7 +109,7 @@ function autoTrade() {
     if (!currentPosition.positionAmt) { // No position opened
         if (isTrendAsc()) {
             printTrendInfo();
-            console.log(`Ascending trend started`);
+            console.log(`ASCENDING trend started`);
             placeOrder('BUY', 'MARKET');
             let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
             placeOrder('SELL', 'LIMIT', takeProfitPrice);
@@ -117,7 +117,7 @@ function autoTrade() {
             placeOrder('SELL', 'STOP', stopLossPrice);
         } else if (isTrendDesc()) {
             printTrendInfo();
-            console.log(`Descending trend started`);
+            console.log(`DESCENDING trend started`);
             placeOrder('SELL', 'MARKET');
             let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
             placeOrder('BUY', 'LIMIT', takeProfitPrice);
