@@ -43,7 +43,7 @@ window.onload = async function () {
     setInterval(function () { detectRapidPriceFall(instrumentSymbol) }, 3000);
 
     document.getElementById('tradeAutoSwitcher').addEventListener('click', handleTradeAutoSwitcher);
-    setInterval(pollCurrentPosition, 10000);
+    setInterval(pollCurrentPosition, 5000);
     setInterval(function () { pollOrders(instrumentSymbol) }, 5000);
     setInterval(displayCurrentPosition, 1000);
 
