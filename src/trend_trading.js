@@ -55,9 +55,9 @@ window.onload = async function () {
     dataManager.pollPriceTickerFor(instrumentSymbol, ticker => {
         currentPrice = parseFloat(ticker['c']);
 
-        if (!dataManager.isEmpty(currentPosition)) {
-            currentPosition.unRealizedProfit = computePnlPcntFor(currentPosition);
-        }
+        //if (!dataManager.isEmpty(currentPosition)) {
+        //    currentPosition.unRealizedProfit = computePnlPcntFor(currentPosition);
+        //}
 
         document.getElementById('ttPrice').value = currentPrice;
     });
