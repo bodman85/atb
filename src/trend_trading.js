@@ -89,14 +89,14 @@ window.onload = async function () {
                     placeOrder('BUY', 'MARKET');
                     let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
                     placeOrder('SELL', 'LIMIT', takeProfitPrice);
-                    let stopLossPrice = parseFloat(currentPrice - parseFloat((previousMin + previousMax)) / 2).toFixed(2);
+                    let stopLossPrice = parseFloat(currentPrice - (previousMin + previousMax) / 2).toFixed(2);
                     placeOrder('SELL', 'STOP', stopLossPrice);
                 } else if (previousMax > 0 && currentPrice > previousMax) {
                     console.log(`Price reached top of Channel`);
                     placeOrder('SELL', 'MARKET');
                     let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
                     placeOrder('BUY', 'LIMIT', takeProfitPrice);
-                    let stopLossPrice = parseFloat(currentPrice + parseFloat((previousMin + previousMax)) / 2).toFixed(2);
+                    let stopLossPrice = parseFloat(currentPrice + (previousMin + previousMax) / 2).toFixed(2);
                     placeOrder('BUY', 'STOP', stopLossPrice);
                 }
             }
@@ -194,8 +194,8 @@ window.onload = async function () {
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '8h', kline => {
-        previousMin = kline.k['l'];
-        previousMax = kline.k['h'];
+        previousMin = parseFloat(kline.k['l']).toFixed(2);
+        previousMax = parseFloat(kline.k['h']).toFixed(2);
     });
 }
 
