@@ -119,21 +119,21 @@ function autoTrade() {
             let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
             placeOrder('BUY', 'STOP', stopLossPrice);
         } else { // price is swinging in channel
-            if (previousMin > 0 && currentPrice < previousMin) {
-                console.log(`Price reached bottom of Channel`);
-                placeOrder('BUY', 'MARKET');
-                let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
-                placeOrder('SELL', 'LIMIT', takeProfitPrice);
-                let stopLossPrice = parseFloat(currentPrice - (previousMax - previousMin) / 2).toFixed(2);
-                placeOrder('SELL', 'STOP', stopLossPrice);
-            } else if (previousMax > 0 && currentPrice > previousMax) {
-                console.log(`Price reached top of Channel`);
-                placeOrder('SELL', 'MARKET');
-                let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
-                placeOrder('BUY', 'LIMIT', takeProfitPrice);
-                let stopLossPrice = parseFloat(currentPrice + (previousMax - previousMin) / 2).toFixed(2);
-                placeOrder('BUY', 'STOP', stopLossPrice);
-            }
+            //if (previousMin > 0 && currentPrice < previousMin) {
+            //    console.log(`Price reached bottom of Channel`);
+            //    placeOrder('BUY', 'MARKET');
+            //    let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
+            //    placeOrder('SELL', 'LIMIT', takeProfitPrice);
+            //    let stopLossPrice = parseFloat(currentPrice - (previousMax - previousMin) / 2).toFixed(2);
+            //    placeOrder('SELL', 'STOP', stopLossPrice);
+            //} else if (previousMax > 0 && currentPrice > previousMax) {
+            //    console.log(`Price reached top of Channel`);
+            //    placeOrder('SELL', 'MARKET');
+            //    let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
+            //    placeOrder('BUY', 'LIMIT', takeProfitPrice);
+            //    let stopLossPrice = parseFloat(currentPrice + (previousMax - previousMin) / 2).toFixed(2);
+            //    placeOrder('BUY', 'STOP', stopLossPrice);
+            //}
         }
     } else if (currentPosition.positionAmt > 0 && isTrendDesc()) { // Long position opened and Trend turned to descending
         placeOrder('SELL', 'LIMIT');
