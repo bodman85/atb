@@ -181,7 +181,7 @@ window.onload = async function () {
         trend_1m = getPcntDelta(kline.k['o'], kline.k['c']);
     });
 
-    dataManager.pollKlinesFor(instrumentSymbol, '1h', kline => {
+    dataManager.pollKlinesFor(instrumentSymbol, '30m', kline => {
         slidingAverage1 = computeAverage(kline.k['o'], kline.k['c']);
     });
 
