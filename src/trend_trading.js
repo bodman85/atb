@@ -33,6 +33,11 @@ let slidingAverage3 = 0;
 let previousMin = 0;
 let previousMax = 0;
 
+let price3SecondsAgo = currentPrice;
+let rapidPriceFallStart = 0;
+let rapidPriceFallFinish = 0;
+let flatCounter = 0;
+
 
 window.onload = async function () {
     document.getElementById('ttInstrument').value = instrumentSymbol;
@@ -64,105 +69,6 @@ window.onload = async function () {
             autoTrade();
         }
     });
-
-    function autoTrade() {
-        if (!currentPosition.positionAmt) { // No position opened
-            if (isTrendAsc()) {
-                printTrendInfo();
-                console.log(`Ascending trend started`);
-                placeOrder('BUY', 'MARKET');
-                let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
-                placeOrder('SELL', 'LIMIT', takeProfitPrice);
-                let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
-                placeOrder('SELL', 'STOP', stopLossPrice);
-            } else if (isTrendDesc()) {
-                printTrendInfo();
-                console.log(`Descending trend started`);
-                placeOrder('SELL', 'MARKET');
-                let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
-                placeOrder('BUY', 'LIMIT', takeProfitPrice);
-                let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
-                placeOrder('BUY', 'STOP', stopLossPrice);
-            } else { // price is swinging in channel
-                if (previousMin > 0 && currentPrice < previousMin) {
-                    console.log(`Price reached bottom of Channel`);
-                    placeOrder('BUY', 'MARKET');
-                    let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
-                    placeOrder('SELL', 'LIMIT', takeProfitPrice);
-                    let stopLossPrice = parseFloat(currentPrice - (previousMax - previousMin) / 2).toFixed(2);
-                    placeOrder('SELL', 'STOP', stopLossPrice);
-                } else if (previousMax > 0 && currentPrice > previousMax) {
-                    console.log(`Price reached top of Channel`);
-                    placeOrder('SELL', 'MARKET');
-                    let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
-                    placeOrder('BUY', 'LIMIT', takeProfitPrice);
-                    let stopLossPrice = parseFloat(currentPrice + (previousMax - previousMin) / 2).toFixed(2);
-                    placeOrder('BUY', 'STOP', stopLossPrice);
-                }
-            }
-        } else if (currentPosition.positionAmt > 0 && isTrendDesc()) { // Long position opened and Trend turned to descending
-            placeOrder('SELL', 'LIMIT');
-
-        } else if (currentPosition.positionAmt < 0 && isTrendAsc()) {// Short position opened and trend turned to acsending
-            placeOrder('BUY', 'LIMIT');
-        }
-    }
-
-    let price3SecondsAgo = currentPrice;
-    let rapidPriceFallStart = 0;
-    let rapidPriceFallFinish = 0;
-    let flatCounter = 0;
-
-    function detectRapidPriceFall() {
-        if (!currentPosition.positionAmt) { // No position
-            if (getPcntDelta(price3SecondsAgo, currentPrice) <= -RAPID_FALL_DELTA_PCNT) {
-                flatCounter = 0;
-                if (rapidPriceFallStart === 0) {
-                    rapidPriceFallStart = price3SecondsAgo;
-                    console.log(`Rapid fall started from price ${rapidPriceFallStart}`);
-                } else {
-                    console.log(`Rapid price fall goes on`);
-                }
-            } else if (getPcntDelta(price3SecondsAgo, currentPrice) >= RAPID_FALL_DELTA_PCNT / 2) {
-                flatCounter = 0;
-                if (rapidPriceFallStart !== 0) {
-                    rapidPriceFallFinish = currentPrice;
-                }
-            } else {
-                if (rapidPriceFallStart !== 0) {
-                    flatCounter++;
-                    if (flatCounter === 10) {
-                        console.log(`Rapid price fall finished and stuck at low point`);
-                        rapidPriceFallFinish = currentPrice;
-                    }
-                }
-            }
-            if (rapidPriceFallFinish > 0) {
-                console.log(`Rapid fall finished with price ${rapidPriceFallFinish}`);
-                if (getPcntDelta(rapidPriceFallStart, rapidPriceFallFinish) <= -TAKE_PROFIT_RAPID_FALL_PCNT) {
-                    if (document.getElementById("tradeAutoSwitcher").checked) {
-                        placeOrder('BUY', 'MARKET');
-                        let takeProfitPrice = rapidPriceFallStart;
-                        placeOrder('SELL', 'LIMIT', takeProfitPrice);
-                        let stopLossPrice = addPcntDelta(rapidPriceFallFinish, -STOP_LOSS_PRICE_PCNT);
-                        placeOrder('SELL', 'STOP', stopLossPrice);
-                    }
-                } else {
-                    console.log(`Rapid price fall was insignificant. No position will be opened.`);
-                }
-                flatCounter = 0;
-                rapidPriceFallStart = 0;
-                rapidPriceFallFinish = 0;
-            }
-        }
-        price3SecondsAgo = currentPrice;
-    }
-
-    function printTrendInfo() {
-        console.log(`slidingAverage1: ${slidingAverage1}`);
-        console.log(`slidingAverage2: ${slidingAverage2}`);
-        console.log(`slidingAverage3: ${slidingAverage3}`);
-    }
 
     dataManager.pollDepthFor(instrumentSymbol, data => {
         document.getElementById('priceTrend').value = isTrendAsc() ? 'ASC' : isTrendDesc() ? 'DESC' : 'FLAT';
@@ -197,6 +103,100 @@ window.onload = async function () {
         previousMin = parseFloat(kline.k['l']).toFixed(2);
         previousMax = parseFloat(kline.k['h']).toFixed(2);
     });
+}
+
+function autoTrade() {
+    if (!currentPosition.positionAmt) { // No position opened
+        if (isTrendAsc()) {
+            printTrendInfo();
+            console.log(`Ascending trend started`);
+            placeOrder('BUY', 'MARKET');
+            let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
+            placeOrder('SELL', 'LIMIT', takeProfitPrice);
+            let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
+            placeOrder('SELL', 'STOP', stopLossPrice);
+        } else if (isTrendDesc()) {
+            printTrendInfo();
+            console.log(`Descending trend started`);
+            placeOrder('SELL', 'MARKET');
+            let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
+            placeOrder('BUY', 'LIMIT', takeProfitPrice);
+            let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
+            placeOrder('BUY', 'STOP', stopLossPrice);
+        } else { // price is swinging in channel
+            if (previousMin > 0 && currentPrice < previousMin) {
+                console.log(`Price reached bottom of Channel`);
+                placeOrder('BUY', 'MARKET');
+                let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
+                placeOrder('SELL', 'LIMIT', takeProfitPrice);
+                let stopLossPrice = parseFloat(currentPrice - (previousMax - previousMin) / 2).toFixed(2);
+                placeOrder('SELL', 'STOP', stopLossPrice);
+            } else if (previousMax > 0 && currentPrice > previousMax) {
+                console.log(`Price reached top of Channel`);
+                placeOrder('SELL', 'MARKET');
+                let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
+                placeOrder('BUY', 'LIMIT', takeProfitPrice);
+                let stopLossPrice = parseFloat(currentPrice + (previousMax - previousMin) / 2).toFixed(2);
+                placeOrder('BUY', 'STOP', stopLossPrice);
+            }
+        }
+    } else if (currentPosition.positionAmt > 0 && isTrendDesc()) { // Long position opened and Trend turned to descending
+        placeOrder('SELL', 'LIMIT');
+
+    } else if (currentPosition.positionAmt < 0 && isTrendAsc()) {// Short position opened and trend turned to acsending
+        placeOrder('BUY', 'LIMIT');
+    }
+}
+
+function detectRapidPriceFall() {
+    if (!currentPosition.positionAmt) { // No position
+        if (getPcntDelta(price3SecondsAgo, currentPrice) <= -RAPID_FALL_DELTA_PCNT) {
+            flatCounter = 0;
+            if (rapidPriceFallStart === 0) {
+                rapidPriceFallStart = price3SecondsAgo;
+                console.log(`Rapid fall started from price ${rapidPriceFallStart}`);
+            } else {
+                console.log(`Rapid price fall goes on`);
+            }
+        } else if (getPcntDelta(price3SecondsAgo, currentPrice) >= RAPID_FALL_DELTA_PCNT / 2) {
+            flatCounter = 0;
+            if (rapidPriceFallStart !== 0) {
+                rapidPriceFallFinish = currentPrice;
+            }
+        } else {
+            if (rapidPriceFallStart !== 0) {
+                flatCounter++;
+                if (flatCounter === 10) {
+                    console.log(`Rapid price fall finished and stuck at low point`);
+                    rapidPriceFallFinish = currentPrice;
+                }
+            }
+        }
+        if (rapidPriceFallFinish > 0) {
+            console.log(`Rapid fall finished with price ${rapidPriceFallFinish}`);
+            if (getPcntDelta(rapidPriceFallStart, rapidPriceFallFinish) <= -TAKE_PROFIT_RAPID_FALL_PCNT) {
+                if (document.getElementById("tradeAutoSwitcher").checked) {
+                    placeOrder('BUY', 'MARKET');
+                    let takeProfitPrice = rapidPriceFallStart;
+                    placeOrder('SELL', 'LIMIT', takeProfitPrice);
+                    let stopLossPrice = addPcntDelta(rapidPriceFallFinish, -STOP_LOSS_PRICE_PCNT);
+                    placeOrder('SELL', 'STOP', stopLossPrice);
+                }
+            } else {
+                console.log(`Rapid price fall was insignificant. No position will be opened.`);
+            }
+            flatCounter = 0;
+            rapidPriceFallStart = 0;
+            rapidPriceFallFinish = 0;
+        }
+    }
+    price3SecondsAgo = currentPrice;
+}
+
+function printTrendInfo() {
+    console.log(`slidingAverage1: ${slidingAverage1}`);
+    console.log(`slidingAverage2: ${slidingAverage2}`);
+    console.log(`slidingAverage3: ${slidingAverage3}`);
 }
 
 function isTrendAsc() {
