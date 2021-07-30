@@ -54,11 +54,6 @@ window.onload = async function () {
 
     dataManager.pollPriceTickerFor(instrumentSymbol, ticker => {
         currentPrice = parseFloat(ticker['c']);
-
-        //if (!dataManager.isEmpty(currentPosition)) {
-        //    currentPosition.unRealizedProfit = computePnlPcntFor(currentPosition);
-        //}
-
         document.getElementById('ttPrice').value = currentPrice;
     });
 
@@ -229,7 +224,9 @@ function pollCurrentPosition() {
     dataManager.requestPositions(positions => {
         let targetPositions = positions.filter(p => parseFloat(p.unRealizedProfit) !== 0 && instrumentSymbol === p.symbol);
         if (targetPositions.length == 0) {
-            totalPnlPcnt += parseFloat(currentPosition.unRealizedProfit);
+            if (currentPosition.positionAmt) {
+                totalPnlPcnt += parseFloat(currentPosition.unRealizedProfit);
+            }
             currentPosition = {};
             //Cancelling all pending limit orders...
             dataManager.cancelAllOrdersFor(instrumentSymbol);
