@@ -89,7 +89,7 @@ window.onload = async function () {
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '2h', kline => {
-        slidingAverageSlow = computeAverage(kline.k['l'], kline.k['hc']);
+        slidingAverageSlow = computeAverage(kline.k['l'], kline.k['h']);
     });
 }
 
