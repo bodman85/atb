@@ -225,7 +225,7 @@ function pollCurrentPosition() {
     dataManager.requestPositions(positions => {
         let targetPositions = positions.filter(p => parseFloat(p.unRealizedProfit) !== 0 && instrumentSymbol === p.symbol);
         if (targetPositions.length == 0) {
-            if (currentPosition.positionAmt) {
+            if (currentPosition.unRealizedProfit) {
                 totalPnlPcnt += parseFloat(currentPosition.unRealizedProfit);
             }
             currentPosition = {};
