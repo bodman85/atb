@@ -155,6 +155,11 @@ function isTrendDesc() {
 }
 
 function isMarketOverbought() {
+    console.log(`currentPrice: ${currentPrice}`);
+    console.log(`oscillatorMaxFast: ${oscillatorMaxFast}`);
+    console.log(`condition: ${oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0 && oscillatorMaxFast > 0 && currentPrice > oscillatorMaxFast}`);
+    console.log(`getPcntGrowth: ${getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast)}`);
+
     return oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0 && oscillatorMaxFast > 0 && currentPrice > oscillatorMaxFast
         && getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast) >= TAKE_PROFIT_OSCILLATOR_PCNT
 }
