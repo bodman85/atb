@@ -25,14 +25,12 @@ let totalPnlPcnt = 0;
 
 let currentPosition = {};
 
-let trend_1m = 0;
+let oscillatorSlidingAverageFast = 0;
+let oscillatorSlidingAverageSlow = 0;
 
-let slidingAverage15m = 0;
-let slidingAverage1h = 0;
-
-let slidingAverage1 = 0;
-let slidingAverage2 = 0;
-let slidingAverage3 = 0;
+let slidingAverageFast = 0;
+let slidingAverageMid = 0;
+let slidingAverageSlow = 0;
 
 let price3SecondsAgo = currentPrice;
 let rapidPriceFallStart = 0;
@@ -68,7 +66,7 @@ window.onload = async function () {
 
     dataManager.pollDepthFor(instrumentSymbol, data => {
         document.getElementById('priceTrend').value = isTrendAsc() ? 'ASC' : isTrendDesc() ? 'DESC' : 'FLAT';
-        uiUtils.paintRedOrGreen(slidingAverage2 - slidingAverage3, 'priceTrend');
+        uiUtils.paintRedOrGreen(slidingAverageMid - slidingAverageSlow, 'priceTrend');
 
         let fairPriceDelta = parseFloat((computeFairPrice(data) - currentPrice) / currentPrice * 100);
         FAIR_PRICE_DELTAS.enq(fairPriceDelta);
@@ -79,24 +77,24 @@ window.onload = async function () {
         uiUtils.paintRedOrGreen(priceForecast, 'priceForecast');
     });
 
-    dataManager.pollKlinesFor(instrumentSymbol, '1m', kline => {
-        trend_1m = getPcntDelta(kline.k['o'], kline.k['c']);
+    dataManager.pollKlinesFor(instrumentSymbol, '5m', kline => {
+        oscillatorSlidingAverageFast = computeAverage(kline.k['l'], kline.k['h']);
     });
 
-    dataManager.pollKlinesFor(instrumentSymbol, '15m', kline => {
-        slidingAverage15m = computeAverage(kline.k['l'], kline.k['h']);
-    });
     dataManager.pollKlinesFor(instrumentSymbol, '30m', kline => {
-        slidingAverage1 = computeAverage(kline.k['l'], kline.k['h']);
+        oscillatorSlidingAverageSlow = computeAverage(kline.k['l'], kline.k['h']);
+    });
+
+    dataManager.pollKlinesFor(instrumentSymbol, '30m', kline => {
+        slidingAverageFast = computeAverage(kline.k['l'], kline.k['h']);
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '1h', kline => {
-        slidingAverage2 = computeAverage(kline.k['l'], kline.k['h']);
-        slidingAverage1h = slidingAverage2;
+        slidingAverageMid = computeAverage(kline.k['l'], kline.k['h']);
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '2h', kline => {
-        slidingAverage3 = computeAverage(kline.k['l'], kline.k['hc']);
+        slidingAverageSlow = computeAverage(kline.k['l'], kline.k['hc']);
     });
 }
 
@@ -148,7 +146,7 @@ function autoTrade() {
 
 function detectRapidPriceFall() {
     if (!currentPosition.positionAmt) { // No position
-        if (getPcntDelta(price3SecondsAgo, currentPrice) <= -RAPID_FALL_DELTA_PCNT) {
+        if (getPcntGrowth(price3SecondsAgo, currentPrice) <= -RAPID_FALL_DELTA_PCNT) {
             flatCounter = 0;
             if (rapidPriceFallStart === 0) {
                 rapidPriceFallStart = price3SecondsAgo;
@@ -156,7 +154,7 @@ function detectRapidPriceFall() {
             } else {
                 console.log(`Rapid price fall goes on`);
             }
-        } else if (getPcntDelta(price3SecondsAgo, currentPrice) >= RAPID_FALL_DELTA_PCNT / 2) {
+        } else if (getPcntGrowth(price3SecondsAgo, currentPrice) >= RAPID_FALL_DELTA_PCNT / 2) {
             flatCounter = 0;
             if (rapidPriceFallStart !== 0) {
                 rapidPriceFallFinish = currentPrice;
@@ -172,7 +170,7 @@ function detectRapidPriceFall() {
         }
         if (rapidPriceFallFinish > 0) {
             console.log(`Rapid fall finished with price ${rapidPriceFallFinish}`);
-            if (getPcntDelta(rapidPriceFallStart, rapidPriceFallFinish) <= -TAKE_PROFIT_RAPID_FALL_PCNT) {
+            if (getPcntGrowth(rapidPriceFallStart, rapidPriceFallFinish) <= -TAKE_PROFIT_RAPID_FALL_PCNT) {
                 if (document.getElementById("tradeAutoSwitcher").checked) {
                     placeOrder('BUY', 'MARKET');
                     let takeProfitPrice = rapidPriceFallStart;
@@ -192,37 +190,37 @@ function detectRapidPriceFall() {
 }
 
 function printTrendInfo() {
-    console.log(`slidingAverage15m: ${slidingAverage15m}`);
-    console.log(`slidingAverage1: ${slidingAverage1}`);
-    console.log(`slidingAverage2: ${slidingAverage2}`);
-    console.log(`slidingAverage3: ${slidingAverage3}`);
+    console.log(`oscillatorSlidingAverage1: ${oscillatorSlidingAverageFast}`);
+    console.log(`oscillatorSlidingAverage2: ${oscillatorSlidingAverageSlow}`);
+    console.log(`slidingAverage1: ${slidingAverageFast}`);
+    console.log(`slidingAverage2: ${slidingAverageMid}`);
+    console.log(`slidingAverage3: ${slidingAverageSlow}`);
 }
 
 function isTrendAsc() {
-    return slidingAverage1 > 0 && slidingAverage2 > 0 && slidingAverage3 > 0
-        && getPcntDelta(slidingAverage2, slidingAverage1) >= TREND_DELTA_PCNT
-        && getPcntDelta(slidingAverage3, slidingAverage2) >= TREND_DELTA_PCNT
-        && trend_1m > 0
+    return slidingAverageFast > 0 && slidingAverageMid > 0 && slidingAverageSlow > 0
+        && getPcntGrowth(slidingAverageMid, slidingAverageFast) >= TREND_DELTA_PCNT
+        && getPcntGrowth(slidingAverageSlow, slidingAverageMid) >= TREND_DELTA_PCNT
 }
 
 function isTrendDesc() {
-    return slidingAverage1 > 0 && slidingAverage2 > 0 && slidingAverage3 > 0
-        && getPcntDelta(slidingAverage1, slidingAverage2) >= TREND_DELTA_PCNT
-        && getPcntDelta(slidingAverage2, slidingAverage3) >= TREND_DELTA_PCNT
-        && trend_1m < 0 && rapidPriceFallStart === 0
+    return slidingAverageFast > 0 && slidingAverageMid > 0 && slidingAverageSlow > 0
+        && getPcntGrowth(slidingAverageFast, slidingAverageMid) >= TREND_DELTA_PCNT
+        && getPcntGrowth(slidingAverageMid, slidingAverageSlow) >= TREND_DELTA_PCNT
+        && rapidPriceFallStart === 0
 }
 
 function isMarketOverbought() {
-    return slidingAverage15m > 0 && slidingAverage1h > 0
-        && getPcntDelta(slidingAverage1h, slidingAverage15m) >= TAKE_PROFIT_SWING_IN_CHANNEL_PCNT
+    return oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0
+        && getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast) >= TAKE_PROFIT_SWING_IN_CHANNEL_PCNT
 }
 
 function isMarketOversold() {
-    return slidingAverage15m > 0 && slidingAverage1h > 0
-        && getPcntDelta(slidingAverage1h, slidingAverage15m) <= -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT
+    return oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0
+        && getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast) <= -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT
 }
 
-function getPcntDelta(oldValue, newValue) {
+function getPcntGrowth(oldValue, newValue) {
     return ((newValue - oldValue) / oldValue) * 100;
 }
 
