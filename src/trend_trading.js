@@ -10,7 +10,7 @@ const FORECAST_DELTA_EDGE_VALUE = 0.1;
 
 const TREND_DELTA_PCNT = 0.05;
 const TAKE_PROFIT_FOLLOW_TREND_PCNT = 0.25;
-const TAKE_PROFIT_OSCILLATOR_PCNT = 0.25;
+const TAKE_PROFIT_OSCILLATOR_PCNT = 0.2;
 const STOP_LOSS_PRICE_PCNT = 0.25;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
 const LIMIT_ORDER_TRIGGER_PRICE_PCNT = 0.05;
@@ -155,10 +155,10 @@ function isTrendDesc() {
 }
 
 function isMarketOverbought() {
-    console.log(`currentPrice: ${currentPrice}`);
-    console.log(`oscillatorMaxFast: ${oscillatorMaxFast}`);
-    console.log(`condition: ${oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0 && oscillatorMaxFast > 0 && currentPrice > oscillatorMaxFast}`);
-    console.log(`getPcntGrowth: ${getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast)}`);
+    //console.log(`currentPrice: ${currentPrice}`);
+    //console.log(`oscillatorMaxFast: ${oscillatorMaxFast}`);
+    //console.log(`condition: ${oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0 && oscillatorMaxFast > 0 && currentPrice > oscillatorMaxFast}`);
+    //console.log(`getPcntGrowth: ${getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast)}`);
 
     return oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0 && oscillatorMaxFast > 0 && currentPrice > oscillatorMaxFast
         && getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast) >= TAKE_PROFIT_OSCILLATOR_PCNT
