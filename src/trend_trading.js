@@ -155,11 +155,6 @@ function isTrendDesc() {
 }
 
 function isMarketOverbought() {
-    //console.log(`currentPrice: ${currentPrice}`);
-    //console.log(`oscillatorMaxFast: ${oscillatorMaxFast}`);
-    //console.log(`condition: ${oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0 && oscillatorMaxFast > 0 && currentPrice > oscillatorMaxFast}`);
-    //console.log(`getPcntGrowth: ${getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast)}`);
-
     return oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0 && oscillatorMaxFast > 0 && currentPrice > oscillatorMaxFast
         && getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast) >= TAKE_PROFIT_OSCILLATOR_PCNT
 }
@@ -276,6 +271,7 @@ function placeOrder(side, type, price) {
         }
         Object.assign(order, { price: orderPrice, timeInForce: 'GTC' });
     } else if (type === 'STOP') {
+        orderPrice = price;
         let triggerPrice = (side === 'BUY' ? addPcntDelta(orderPrice, LIMIT_ORDER_TRIGGER_PRICE_PCNT) : addPcntDelta(orderPrice, -LIMIT_ORDER_TRIGGER_PRICE_PCNT));
         Object.assign(order, { price: orderPrice, stopPrice: triggerPrice, timeInForce: 'GTC' });
     }
