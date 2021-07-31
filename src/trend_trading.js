@@ -305,16 +305,17 @@ function placeOrder(side, type, price) {
         type: type,
         recvWindow: 30000
     }
-    currentPosition.positionAmt = order.quantity;
     let orderPrice = price;
-    if (type === 'LIMIT') {
+    if (type === 'MARKET') {
+        //opening trade should always be a MARKET trade
+        currentPosition.positionAmt = order.quantity;
+    } else if (type === 'LIMIT') {
         orderPrice = price ? price : currentBidPrice; //bid and ask prices swapped intentionally to execute limit orders immediately
         if (side === 'BUY') {
             orderPrice = price ? price : currentAskPrice;
         }
         Object.assign(order, { price: orderPrice, timeInForce: 'GTC' });
     } else if (type === 'STOP') {
-        let orderPrice = price;
         Object.assign(order, { price: orderPrice, stopPrice: orderPrice, timeInForce: 'GTC' });
     }
     console.log(`Placing ${type} ${side} order with price ${orderPrice}...`);
