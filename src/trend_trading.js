@@ -12,7 +12,7 @@ const TREND_DELTA_PCNT = 0.05;
 const RAPID_FALL_DELTA_PCNT = 0.2;
 const TAKE_PROFIT_FOLLOW_TREND_PCNT = 0.25;
 const TAKE_PROFIT_RAPID_FALL_PCNT = 0.5;
-const TAKE_PROFIT_OSCILLATOR_PCNT = 0.25;
+const TAKE_PROFIT_OSCILLATOR_PCNT = 0.3;
 const STOP_LOSS_PRICE_PCNT = 0.25;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
 
@@ -25,6 +25,8 @@ let totalPnlPcnt = 0;
 
 let currentPosition = {};
 
+let oscillatorMaxFast = 0;
+let oscillatorMinFast = 0;
 let oscillatorSlidingAverageFast = 0;
 let oscillatorSlidingAverageSlow = 0;
 
@@ -78,7 +80,9 @@ window.onload = async function () {
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '5m', kline => {
-        oscillatorSlidingAverageFast = computeAverage(kline.k['l'], kline.k['h']);
+        oscillatorMinFast = kline.k['l'];
+        oscillatorMaxFast = kline.k['h'];
+        oscillatorSlidingAverageFast = computeAverage(oscillatorMinFast, oscillatorMaxFast);
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '30m', kline => {
@@ -206,12 +210,12 @@ function isTrendDesc() {
 }
 
 function isMarketOverbought() {
-    return oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0
+    return oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0 && currentPrice > oscillatorMaxFast
         && getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast) >= TAKE_PROFIT_OSCILLATOR_PCNT
 }
 
 function isMarketOversold() {
-    return oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0
+    return oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0 && currentPrice < oscillatorMinFast
         && getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast) <= -TAKE_PROFIT_OSCILLATOR_PCNT
 }
 
