@@ -317,9 +317,10 @@ function placeOrder(side, type, price) {
         }
         Object.assign(order, { price: orderPrice, timeInForce: 'GTC' });
     } else if (type === 'STOP') {
-        Object.assign(order, { price: price, stopPrice: price, timeInForce: 'GTC' });
+        let orderPrice = price;
+        Object.assign(order, { price: orderPrice, stopPrice: orderPrice, timeInForce: 'GTC' });
     }
-    console.log(`Placing ${type} ${side} order...`);
+    console.log(`Placing ${type} ${side} order with price ${orderPrice}...`);
     dataManager.placeOrder(order);
 }
 
