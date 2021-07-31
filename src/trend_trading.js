@@ -6,14 +6,13 @@ const urlParams = new URLSearchParams(window.location.search);
 const instrumentSymbol = urlParams.get('instrument');
 
 const FORECAST_BUFFER_SIZE = 10;
-
 const FORECAST_DELTA_EDGE_VALUE = 0.1;
 
-const TREND_DELTA_PCNT = 0.025;
+const TREND_DELTA_PCNT = 0.05;
 const RAPID_FALL_DELTA_PCNT = 0.2;
 const TAKE_PROFIT_FOLLOW_TREND_PCNT = 0.25;
 const TAKE_PROFIT_RAPID_FALL_PCNT = 0.5;
-const TAKE_PROFIT_SWING_IN_CHANNEL_PCNT = 0.2;
+const TAKE_PROFIT_SWING_IN_CHANNEL_PCNT = 0.25;
 const STOP_LOSS_PRICE_PCNT = 0.25;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
 
@@ -27,11 +26,10 @@ let totalPnlPcnt = 0;
 let currentPosition = {};
 
 let trend_1m = 0;
+let slidingAverage15m = 0;
 let slidingAverage1 = 0;
 let slidingAverage2 = 0;
 let slidingAverage3 = 0;
-let previousMin = 0;
-let previousMax = 0;
 
 let price3SecondsAgo = currentPrice;
 let rapidPriceFallStart = 0;
@@ -82,21 +80,19 @@ window.onload = async function () {
         trend_1m = getPcntDelta(kline.k['o'], kline.k['c']);
     });
 
+    dataManager.pollKlinesFor(instrumentSymbol, '15m', kline => {
+        slidingAverage15m = computeAverage(kline.k['l'], kline.k['h']);
+    });
     dataManager.pollKlinesFor(instrumentSymbol, '30m', kline => {
-        slidingAverage1 = computeAverage(kline.k['o'], kline.k['c']);
+        slidingAverage1 = computeAverage(kline.k['l'], kline.k['h']);
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '1h', kline => {
-        slidingAverage2 = computeAverage(kline.k['o'], kline.k['c']);
+        slidingAverage2 = computeAverage(kline.k['l'], kline.k['h']);
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '2h', kline => {
-        slidingAverage3 = computeAverage(kline.k['o'], kline.k['c']);
-    });
-
-    dataManager.pollKlinesFor(instrumentSymbol, '8h', kline => {
-        previousMin = parseFloat(kline.k['l']).toFixed(2);
-        previousMax = parseFloat(kline.k['h']).toFixed(2);
+        slidingAverage3 = computeAverage(kline.k['l'], kline.k['hc']);
     });
 }
 
@@ -119,24 +115,24 @@ function autoTrade() {
             let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
             placeOrder('BUY', 'STOP', stopLossPrice);
         } else { // price is swinging in channel
-            //if (getPcntDelta(slidingAverage3, slidingAverage1) >= TREND_DELTA_PCNT) {
-            //    console.log(`Price temporarily going up`);
-            //    printTrendInfo();
-            //    placeOrder('BUY', 'MARKET');
-            //    let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
-            //    placeOrder('SELL', 'LIMIT', takeProfitPrice);
-            //    let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
-            //    placeOrder('SELL', 'STOP', stopLossPrice);
+            if (getPcntDelta(slidingAverage2, slidingAverage15m) >= TAKE_PROFIT_SWING_IN_CHANNEL_PCNT) {
+                console.log(`Market is overbought`);
+                printTrendInfo();
+                placeOrder('SELL', 'MARKET');
+                let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
+                placeOrder('BUY', 'LIMIT', takeProfitPrice);
+                let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
+                placeOrder('BUY', 'STOP', stopLossPrice);
 
-            //} else if (getPcntDelta(slidingAverage1, slidingAverage3) >= TREND_DELTA_PCNT) {
-            //    console.log(`Price temporarily going down`);
-            //    printTrendInfo();
-            //    placeOrder('SELL', 'MARKET');
-            //    let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
-            //    placeOrder('BUY', 'LIMIT', takeProfitPrice);
-            //    let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
-            //    placeOrder('BUY', 'STOP', stopLossPrice);
-            //}
+            } else if (getPcntDelta(slidingAverage2, slidingAverage15m) <= -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT) {
+                console.log(`Market is oversold`);
+                printTrendInfo();
+                placeOrder('BUY', 'MARKET');
+                let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
+                placeOrder('SELL', 'LIMIT', takeProfitPrice);
+                let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
+                placeOrder('SELL', 'STOP', stopLossPrice);
+            }
         }
     } else if (currentPosition.positionAmt > 0 && isTrendDesc()) { // Long position opened and Trend turned to descending
         placeOrder('SELL', 'LIMIT');
@@ -192,6 +188,7 @@ function detectRapidPriceFall() {
 }
 
 function printTrendInfo() {
+    console.log(`slidingAverage15m: ${slidingAverage15m}`);
     console.log(`slidingAverage1: ${slidingAverage1}`);
     console.log(`slidingAverage2: ${slidingAverage2}`);
     console.log(`slidingAverage3: ${slidingAverage3}`);
