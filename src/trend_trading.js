@@ -184,7 +184,7 @@ function pollCurrentPosition() {
                 totalPnlPcnt += parseFloat(currentPosition.unRealizedProfit);
             }
             currentPosition = {};
-            //Cancelling all pending limit orders...
+            console.log(`Cancelling all pending limit orders...`);
             dataManager.cancelAllOrdersFor(instrumentSymbol);
         } else {
             let position = targetPositions[0];
