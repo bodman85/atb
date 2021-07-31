@@ -318,7 +318,8 @@ function placeOrder(side, type, price) {
         }
         Object.assign(order, { price: orderPrice, timeInForce: 'GTC' });
     } else if (type === 'STOP') {
-        Object.assign(order, { price: orderPrice, stopPrice: orderPrice, timeInForce: 'GTC' });
+        let triggerPrice = side === 'BUY' ? addPcntDelta(orderPrice, -0.05) : addPcntDelta(orderPrice, 0.05);
+        Object.assign(order, { price: orderPrice, stopPrice: triggerPrice, timeInForce: 'GTC' });
     }
     console.log(`Placing ${type} ${side} order with price ${orderPrice}...`);
     dataManager.placeOrder(order);

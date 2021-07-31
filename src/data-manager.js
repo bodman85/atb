@@ -107,17 +107,6 @@ function placeOrder(order, callback) {
     firePostRequestWithCallback(ORDER + '?' + queryString, callback);
 }
 
-function placeHedgedOrder(order, callback) {
-    let buyQueryString = `symbol=${order.buy}&side=BUY&type=MARKET&quantity=1&timeStamp=${Date.now()}&recvWindow=60000`;
-    let sellQueryString = `symbol=${order.sell}&side=SELL&type=MARKET&quantity=1&timeStamp=${Date.now()}&recvWindow=60000`;
-    buyQueryString += sign(buyQueryString);
-    sellQueryString += sign(sellQueryString);
-    firePostRequestWithCallback(ORDER + '?' + buyQueryString, callback);
-    firePostRequestWithCallback(ORDER + '?' + sellQueryString, callback);
-    //fireTestRequestWithCallback(ORDER + '?' + buyQueryString, callback);
-    //fireTestRequestWithCallback(ORDER + '?' + sellQueryString, callback);
-}
-
 function requestOrders(symbol, callback) {
     let queryString = `symbol=${symbol}&timeStamp=${Date.now()}`;
     queryString += sign(queryString);
@@ -220,7 +209,6 @@ module.exports = {
     requestPrice: requestPrice,
     requestCurrentPrices: requestCurrentPrices,
     placeOrder: placeOrder,
-    placeHedgedOrder: placeHedgedOrder,
     requestOrders: requestOrders,
     cancelOrder: cancelOrder,
     cancelAllOrdersFor: cancelAllOrdersFor,
