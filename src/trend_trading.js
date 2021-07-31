@@ -9,12 +9,11 @@ const FORECAST_BUFFER_SIZE = 10;
 const FORECAST_DELTA_EDGE_VALUE = 0.1;
 
 const TREND_DELTA_PCNT = 0.05;
-const RAPID_FALL_DELTA_PCNT = 0.2;
 const TAKE_PROFIT_FOLLOW_TREND_PCNT = 0.25;
-const TAKE_PROFIT_RAPID_FALL_PCNT = 0.5;
 const TAKE_PROFIT_OSCILLATOR_PCNT = 0.3;
 const STOP_LOSS_PRICE_PCNT = 0.25;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
+const TRIGGER_PRICE_PCNT = 0.05;
 
 let FAIR_PRICE_DELTAS = new CircularBuffer(FORECAST_BUFFER_SIZE);
 
@@ -34,19 +33,11 @@ let slidingAverageFast = 0;
 let slidingAverageMid = 0;
 let slidingAverageSlow = 0;
 
-let price3SecondsAgo = currentPrice;
-let rapidPriceFallStart = 0;
-let rapidPriceFallFinish = 0;
-let flatCounter = 0;
-
-
 window.onload = async function () {
     document.getElementById('ttInstrument').value = instrumentSymbol;
     document.getElementById('buyInstrumentButton').addEventListener('click', function () { placeOrder('BUY', 'MARKET') });
     document.getElementById('sellInstrumentButton').addEventListener('click', function () { placeOrder('SELL', 'MARKET') });
     document.getElementById("ttRemoveAllOrdersButton").addEventListener("click", function () { dataManager.cancelAllOrdersFor(instrumentSymbol) });
-
-    setInterval(function () { detectRapidPriceFall(instrumentSymbol) }, 3000);
 
     document.getElementById('tradeAutoSwitcher').addEventListener('click', handleTradeAutoSwitcher);
     setInterval(pollCurrentPosition, 5000);
@@ -143,51 +134,6 @@ function autoTrade() {
     }
 }
 
-function detectRapidPriceFall() {
-    if (!currentPosition.positionAmt) { // No position
-        if (getPcntGrowth(price3SecondsAgo, currentPrice) <= -RAPID_FALL_DELTA_PCNT) {
-            flatCounter = 0;
-            if (rapidPriceFallStart === 0) {
-                rapidPriceFallStart = price3SecondsAgo;
-                console.log(`Rapid fall started from price ${rapidPriceFallStart}`);
-            } else {
-                console.log(`Rapid price fall goes on`);
-            }
-        } else if (getPcntGrowth(price3SecondsAgo, currentPrice) >= RAPID_FALL_DELTA_PCNT / 2) {
-            flatCounter = 0;
-            if (rapidPriceFallStart !== 0) {
-                rapidPriceFallFinish = currentPrice;
-            }
-        } else {
-            if (rapidPriceFallStart !== 0) {
-                flatCounter++;
-                if (flatCounter === 10) {
-                    console.log(`Rapid price fall finished and stuck at low point`);
-                    rapidPriceFallFinish = currentPrice;
-                }
-            }
-        }
-        if (rapidPriceFallFinish > 0) {
-            console.log(`Rapid fall finished with price ${rapidPriceFallFinish}`);
-            if (getPcntGrowth(rapidPriceFallStart, rapidPriceFallFinish) <= -TAKE_PROFIT_RAPID_FALL_PCNT) {
-                if (document.getElementById("tradeAutoSwitcher").checked) {
-                    placeOrder('BUY', 'MARKET');
-                    let takeProfitPrice = rapidPriceFallStart;
-                    placeOrder('SELL', 'LIMIT', takeProfitPrice);
-                    let stopLossPrice = addPcntDelta(rapidPriceFallFinish, -STOP_LOSS_PRICE_PCNT);
-                    placeOrder('SELL', 'STOP', stopLossPrice);
-                }
-            } else {
-                console.log(`Rapid price fall was insignificant. No position will be opened.`);
-            }
-            flatCounter = 0;
-            rapidPriceFallStart = 0;
-            rapidPriceFallFinish = 0;
-        }
-    }
-    price3SecondsAgo = currentPrice;
-}
-
 function printTrendInfo() {
     console.log(`oscillatorSlidingAverageFast: ${oscillatorSlidingAverageFast}`);
     console.log(`oscillatorSlidingAverageSlow: ${oscillatorSlidingAverageSlow}`);
@@ -206,7 +152,6 @@ function isTrendDesc() {
     return slidingAverageFast > 0 && slidingAverageMid > 0 && slidingAverageSlow > 0
         && getPcntGrowth(slidingAverageFast, slidingAverageMid) >= TREND_DELTA_PCNT
         && getPcntGrowth(slidingAverageMid, slidingAverageSlow) >= TREND_DELTA_PCNT
-        && rapidPriceFallStart === 0
 }
 
 function isMarketOverbought() {
@@ -326,7 +271,7 @@ function placeOrder(side, type, price) {
         }
         Object.assign(order, { price: orderPrice, timeInForce: 'GTC' });
     } else if (type === 'STOP') {
-        let triggerPrice = (side === 'BUY' ? addPcntDelta(orderPrice, 0.05) : addPcntDelta(orderPrice, -0.05));
+        let triggerPrice = (side === 'BUY' ? addPcntDelta(orderPrice, TRIGGER_PRICE_PCNT) : addPcntDelta(orderPrice, -TRIGGER_PRICE_PCNT));
         Object.assign(order, { price: orderPrice, stopPrice: triggerPrice, timeInForce: 'GTC' });
     }
     console.log(`Placing ${type} ${side} order with price ${orderPrice}...`);
