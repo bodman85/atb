@@ -12,7 +12,7 @@ const TREND_DELTA_PCNT = 0.05;
 const RAPID_FALL_DELTA_PCNT = 0.2;
 const TAKE_PROFIT_FOLLOW_TREND_PCNT = 0.25;
 const TAKE_PROFIT_RAPID_FALL_PCNT = 0.5;
-const TAKE_PROFIT_SWING_IN_CHANNEL_PCNT = 0.2;
+const TAKE_PROFIT_OSCILLATOR_PCNT = 0.2;
 const STOP_LOSS_PRICE_PCNT = 0.25;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
 
@@ -121,7 +121,7 @@ function autoTrade() {
                 console.log(`Market is overbought`);
                 printTrendInfo();
                 placeOrder('SELL', 'MARKET');
-                let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
+                let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('BUY', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
                 placeOrder('BUY', 'STOP', stopLossPrice);
@@ -130,7 +130,7 @@ function autoTrade() {
                 console.log(`Market is oversold`);
                 printTrendInfo();
                 placeOrder('BUY', 'MARKET');
-                let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
+                let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('SELL', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
                 placeOrder('SELL', 'STOP', stopLossPrice);
@@ -190,8 +190,8 @@ function detectRapidPriceFall() {
 }
 
 function printTrendInfo() {
-    console.log(`oscillatorSlidingAverage1: ${oscillatorSlidingAverageFast}`);
-    console.log(`oscillatorSlidingAverage2: ${oscillatorSlidingAverageSlow}`);
+    console.log(`oscillatorSlidingAverageFast: ${oscillatorSlidingAverageFast}`);
+    console.log(`oscillatorSlidingAverageSlow: ${oscillatorSlidingAverageSlow}`);
     console.log(`slidingAverage1: ${slidingAverageFast}`);
     console.log(`slidingAverage2: ${slidingAverageMid}`);
     console.log(`slidingAverage3: ${slidingAverageSlow}`);
@@ -212,12 +212,12 @@ function isTrendDesc() {
 
 function isMarketOverbought() {
     return oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0
-        && getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast) >= TAKE_PROFIT_SWING_IN_CHANNEL_PCNT
+        && getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast) >= TAKE_PROFIT_OSCILLATOR_PCNT
 }
 
 function isMarketOversold() {
     return oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0
-        && getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast) <= -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT
+        && getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast) <= -TAKE_PROFIT_OSCILLATOR_PCNT
 }
 
 function getPcntGrowth(oldValue, newValue) {
@@ -316,7 +316,7 @@ function placeOrder(side, type, price) {
         type: type,
         recvWindow: 30000
     }
-    let orderPrice = price;
+    let orderPrice = currentPrice;
     if (type === 'MARKET') {
         //opening trade should always be a MARKET trade
         currentPosition.positionAmt = order.quantity;
