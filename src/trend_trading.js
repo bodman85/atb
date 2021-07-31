@@ -136,11 +136,6 @@ function autoTrade() {
                 placeOrder('SELL', 'STOP', stopLossPrice);
             }
         }
-    } else if (currentPosition.positionAmt > 0 && isTrendDesc()) { // Long position opened and Trend turned to descending
-        placeOrder('SELL', 'LIMIT');
-
-    } else if (currentPosition.positionAmt < 0 && isTrendAsc()) {// Short position opened and trend turned to acsending
-        placeOrder('BUY', 'LIMIT');
     }
 }
 
