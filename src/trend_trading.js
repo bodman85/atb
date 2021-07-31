@@ -305,14 +305,10 @@ function placeOrder(side, type, price) {
         type: type,
         recvWindow: 30000
     }
+    currentPosition.positionAmt = order.quantity;
     let orderPrice = price;
-    if (type === 'MARKET') {
-        currentPosition.positionAmt = order.quantity;
-        if (side === 'SELL') {
-            currentPosition.positionAmt *= -1;
-        }
-    } else if (type === 'LIMIT') {
-            orderPrice = price ? price : currentBidPrice; //bid and ask prices swapped intentionally to execute limit orders immediately
+    if (type === 'LIMIT') {
+        orderPrice = price ? price : currentBidPrice; //bid and ask prices swapped intentionally to execute limit orders immediately
         if (side === 'BUY') {
             orderPrice = price ? price : currentAskPrice;
         }
