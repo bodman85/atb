@@ -121,6 +121,7 @@ function autoTrade() {
         } else { // price is swinging in channel
             if (getPcntDelta(slidingAverage3, slidingAverage1) >= TREND_DELTA_PCNT) {
                 console.log(`Price temporarily going up`);
+                printTrendInfo();
                 placeOrder('BUY', 'LIMIT');
                 let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
                 placeOrder('SELL', 'LIMIT', takeProfitPrice);
@@ -129,6 +130,7 @@ function autoTrade() {
 
             } else if (getPcntDelta(slidingAverage1, slidingAverage3) >= TREND_DELTA_PCNT) {
                 console.log(`Price temporarily going down`);
+                printTrendInfo();
                 placeOrder('SELL', 'LIMIT');
                 let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
                 placeOrder('BUY', 'LIMIT', takeProfitPrice);
