@@ -26,7 +26,10 @@ let totalPnlPcnt = 0;
 let currentPosition = {};
 
 let trend_1m = 0;
+
 let slidingAverage15m = 0;
+let slidingAverage1h = 0;
+
 let slidingAverage1 = 0;
 let slidingAverage2 = 0;
 let slidingAverage3 = 0;
@@ -89,6 +92,7 @@ window.onload = async function () {
 
     dataManager.pollKlinesFor(instrumentSymbol, '1h', kline => {
         slidingAverage2 = computeAverage(kline.k['l'], kline.k['h']);
+        slidingAverage1h = slidingAverage2;
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '2h', kline => {
@@ -115,7 +119,7 @@ function autoTrade() {
             let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
             placeOrder('BUY', 'STOP', stopLossPrice);
         } else { // price is swinging in channel
-            if (getPcntDelta(slidingAverage2, slidingAverage15m) >= TAKE_PROFIT_SWING_IN_CHANNEL_PCNT) {
+            if (isMarketOverbought()) {
                 console.log(`Market is overbought`);
                 printTrendInfo();
                 placeOrder('SELL', 'MARKET');
@@ -124,7 +128,7 @@ function autoTrade() {
                 let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
                 placeOrder('BUY', 'STOP', stopLossPrice);
 
-            } else if (getPcntDelta(slidingAverage2, slidingAverage15m) <= -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT) {
+            } else if (isMarketOversold()) {
                 console.log(`Market is oversold`);
                 printTrendInfo();
                 placeOrder('BUY', 'MARKET');
@@ -206,6 +210,16 @@ function isTrendDesc() {
         && getPcntDelta(slidingAverage1, slidingAverage2) >= TREND_DELTA_PCNT
         && getPcntDelta(slidingAverage2, slidingAverage3) >= TREND_DELTA_PCNT
         && trend_1m < 0 && rapidPriceFallStart === 0
+}
+
+function isMarketOverbought() {
+    return slidingAverage15m > 0 && slidingAverage1h > 0
+        && getPcntDelta(slidingAverage1h, slidingAverage15m) >= TAKE_PROFIT_SWING_IN_CHANNEL_PCNT
+}
+
+function isMarketOversold() {
+    return slidingAverage15m > 0 && slidingAverage1h > 0
+        && getPcntDelta(slidingAverage1h, slidingAverage15m) <= -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT
 }
 
 function getPcntDelta(oldValue, newValue) {
