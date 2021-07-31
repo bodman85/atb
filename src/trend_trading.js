@@ -119,24 +119,24 @@ function autoTrade() {
             let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
             placeOrder('BUY', 'STOP', stopLossPrice);
         } else { // price is swinging in channel
-            if (getPcntDelta(slidingAverage3, slidingAverage1) >= TREND_DELTA_PCNT) {
-                console.log(`Price temporarily going up`);
-                printTrendInfo();
-                placeOrder('BUY', 'MARKET');
-                let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
-                placeOrder('SELL', 'LIMIT', takeProfitPrice);
-                let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
-                placeOrder('SELL', 'STOP', stopLossPrice);
+            //if (getPcntDelta(slidingAverage3, slidingAverage1) >= TREND_DELTA_PCNT) {
+            //    console.log(`Price temporarily going up`);
+            //    printTrendInfo();
+            //    placeOrder('BUY', 'MARKET');
+            //    let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
+            //    placeOrder('SELL', 'LIMIT', takeProfitPrice);
+            //    let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
+            //    placeOrder('SELL', 'STOP', stopLossPrice);
 
-            } else if (getPcntDelta(slidingAverage1, slidingAverage3) >= TREND_DELTA_PCNT) {
-                console.log(`Price temporarily going down`);
-                printTrendInfo();
-                placeOrder('SELL', 'MARKET');
-                let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
-                placeOrder('BUY', 'LIMIT', takeProfitPrice);
-                let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
-                placeOrder('BUY', 'STOP', stopLossPrice);
-            }
+            //} else if (getPcntDelta(slidingAverage1, slidingAverage3) >= TREND_DELTA_PCNT) {
+            //    console.log(`Price temporarily going down`);
+            //    printTrendInfo();
+            //    placeOrder('SELL', 'MARKET');
+            //    let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_SWING_IN_CHANNEL_PCNT);
+            //    placeOrder('BUY', 'LIMIT', takeProfitPrice);
+            //    let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
+            //    placeOrder('BUY', 'STOP', stopLossPrice);
+            //}
         }
     } else if (currentPosition.positionAmt > 0 && isTrendDesc()) { // Long position opened and Trend turned to descending
         placeOrder('SELL', 'LIMIT');
@@ -318,7 +318,7 @@ function placeOrder(side, type, price) {
         }
         Object.assign(order, { price: orderPrice, timeInForce: 'GTC' });
     } else if (type === 'STOP') {
-        let triggerPrice = side === 'BUY' ? addPcntDelta(orderPrice, -0.05) : addPcntDelta(orderPrice, 0.05);
+        let triggerPrice = (side === 'BUY' ? addPcntDelta(orderPrice, 0.05) : addPcntDelta(orderPrice, -0.05));
         Object.assign(order, { price: orderPrice, stopPrice: triggerPrice, timeInForce: 'GTC' });
     }
     console.log(`Placing ${type} ${side} order with price ${orderPrice}...`);
