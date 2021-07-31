@@ -90,7 +90,7 @@ window.onload = async function () {
         slidingAverage2 = computeAverage(kline.k['o'], kline.k['c']);
     });
 
-    dataManager.pollKlinesFor(instrumentSymbol, '4h', kline => {
+    dataManager.pollKlinesFor(instrumentSymbol, '2h', kline => {
         slidingAverage3 = computeAverage(kline.k['o'], kline.k['c']);
     });
 
