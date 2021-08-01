@@ -93,9 +93,9 @@ window.onload = async function () {
         trend_1m = getPcntGrowth(kline.k['o'], kline.k['c']);
         //compute moving averages
         oscillatorSlidingAverageSlow = computeAveragePriceForLatestMinutes(30);
-        movingAverageFast = computeAveragePriceForLatestMinutes(30);
-        movingAverageMid = computeAveragePriceForLatestMinutes(60);
-        movingAverageSlow = computeAveragePriceForLatestMinutes(120);
+        movingAverageFast = computeAveragePriceForLatestMinutes(60);
+        movingAverageMid = computeAveragePriceForLatestMinutes(120);
+        movingAverageSlow = computeAveragePriceForLatestMinutes(240);
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '5m', kline => {
