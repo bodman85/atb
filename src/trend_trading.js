@@ -20,7 +20,7 @@ const OSCILLATOR_TRIGGER_PCNT = 0.4;
 const TAKE_PROFIT_OSCILLATOR_PCNT = 0.2;
 const STOP_LOSS_PRICE_PCNT = 0.25;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
-const LIMIT_ORDER_TRIGGER_PRICE_PCNT = 0.05;
+const LIMIT_ORDER_TRIGGER_PRICE_PCNT = 0.1;
 
 let FAIR_PRICE_DELTAS = new CircularBuffer(FORECAST_BUFFER_SIZE);
 let AVG_PRICES = new CircularBuffer(AVG_PRICES_BUFFER_SIZE);
@@ -30,6 +30,7 @@ let currentBidPrice = 0;
 let currentAskPrice = 0;
 let totalPnlPcnt = 0;
 
+let pendingOrders = -1;
 let currentPosition = {};
 
 let oscillatorMaxFast = 0;
@@ -143,6 +144,21 @@ function autoTrade() {
                 placeOrder('SELL', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
                 placeOrder('SELL', 'STOP', stopLossPrice);
+            }
+        }
+    } else {
+        if (pendingOrders === 1) {
+            dataManager.cancelAllOrdersFor(instrumentSymbol);
+            if (currentPosition.positionAmt > 0) {
+                let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
+                placeOrder('SELL', 'LIMIT', takeProfitPrice);
+                let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
+                placeOrder('SELL', 'STOP', stopLossPrice);
+            } else if (currentPosition.positionAmt < 0) {
+                let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
+                placeOrder('BUY', 'LIMIT', takeProfitPrice);
+                let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
+                placeOrder('BUY', 'STOP', stopLossPrice);
             }
         }
     }
@@ -307,6 +323,7 @@ function placeOrder(side, type, price) {
 function pollOrders(symbol) {
     dataManager.requestOrders(symbol, orders => {
         let filteredOrders = orders.filter(o => o.status === 'NEW');
+        pendingOrders = filteredOrders.length;
         if (filteredOrders.length > 0) {
             uiUtils.showElement("ttRemoveAllOrdersButton");
         } else {
