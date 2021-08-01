@@ -14,8 +14,8 @@ const FORECAST_BUFFER_SIZE = 10;
 const AVG_PRICES_BUFFER_SIZE = 240;
 const FORECAST_DELTA_EDGE_VALUE = 0.1;
 
-const TREND_DELTA_PCNT = 0.05;
-const TAKE_PROFIT_FOLLOW_TREND_PCNT = 0.25;
+const FOLLOW_TREND_TRIGGER_PCNT = 0.1;
+const TAKE_PROFIT_FOLLOW_TREND_PCNT = 0.3;
 const OSCILLATOR_TRIGGER_PCNT = 0.4;
 const TAKE_PROFIT_OSCILLATOR_PCNT = 0.2;
 const STOP_LOSS_PRICE_PCNT = 0.25;
@@ -159,15 +159,15 @@ function printTrendInfo() {
 
 function isTrendAsc() {
     return movingAverageFast > 0 && movingAverageMid > 0 && movingAverageSlow > 0
-        && getPcntGrowth(movingAverageMid, movingAverageFast) >= TREND_DELTA_PCNT
-        && getPcntGrowth(movingAverageSlow, movingAverageMid) >= TREND_DELTA_PCNT
+        && getPcntGrowth(movingAverageMid, movingAverageFast) >= FOLLOW_TREND_TRIGGER_PCNT
+        && getPcntGrowth(movingAverageSlow, movingAverageMid) >= FOLLOW_TREND_TRIGGER_PCNT
         && trend_1m > 0
 }
 
 function isTrendDesc() {
     return movingAverageFast > 0 && movingAverageMid > 0 && movingAverageSlow > 0
-        && getPcntGrowth(movingAverageFast, movingAverageMid) >= TREND_DELTA_PCNT
-        && getPcntGrowth(movingAverageMid, movingAverageSlow) >= TREND_DELTA_PCNT
+        && getPcntGrowth(movingAverageFast, movingAverageMid) >= FOLLOW_TREND_TRIGGER_PCNT
+        && getPcntGrowth(movingAverageMid, movingAverageSlow) >= FOLLOW_TREND_TRIGGER_PCNT
         && trend_1m < 0
 }
 
