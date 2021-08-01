@@ -36,6 +36,7 @@ let oscillatorMinFast = 0;
 let oscillatorSlidingAverageFast = 0;
 let oscillatorSlidingAverageSlow = 0;
 
+let trend_1m = 0;
 let movingAverageFast = 0;
 let movingAverageMid = 0;
 let movingAverageSlow = 0;
@@ -88,6 +89,7 @@ window.onload = async function () {
         }
         //enqueue new or update existing value in CirculrBuffer
         AVG_PRICES.enq(computeAverage(kline.k['l'], kline.k['h']));
+        trend_1m = getPcntGrowth(kline.k['o'], kline.k['c']);
         //compute moving averages
         oscillatorSlidingAverageSlow = computeAveragePriceForLatestMinutes(30);
         movingAverageFast = computeAveragePriceForLatestMinutes(30);
@@ -158,12 +160,14 @@ function isTrendAsc() {
     return movingAverageFast > 0 && movingAverageMid > 0 && movingAverageSlow > 0
         && getPcntGrowth(movingAverageMid, movingAverageFast) >= TREND_DELTA_PCNT
         && getPcntGrowth(movingAverageSlow, movingAverageMid) >= TREND_DELTA_PCNT
+        && trend_1m > 0
 }
 
 function isTrendDesc() {
     return movingAverageFast > 0 && movingAverageMid > 0 && movingAverageSlow > 0
         && getPcntGrowth(movingAverageFast, movingAverageMid) >= TREND_DELTA_PCNT
         && getPcntGrowth(movingAverageMid, movingAverageSlow) >= TREND_DELTA_PCNT
+        && trend_1m < 0
 }
 
 function isMarketOverbought() {
