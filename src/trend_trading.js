@@ -16,6 +16,7 @@ const FORECAST_DELTA_EDGE_VALUE = 0.1;
 
 const TREND_DELTA_PCNT = 0.05;
 const TAKE_PROFIT_FOLLOW_TREND_PCNT = 0.25;
+const OSCILLATOR_TRIGGER_PCNT = 0.4;
 const TAKE_PROFIT_OSCILLATOR_PCNT = 0.2;
 const STOP_LOSS_PRICE_PCNT = 0.25;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
@@ -172,12 +173,12 @@ function isTrendDesc() {
 
 function isMarketOverbought() {
     return oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0 && oscillatorMaxFast > 0 && currentPrice > oscillatorMaxFast
-        && getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast) >= TAKE_PROFIT_OSCILLATOR_PCNT
+        && getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast) >= OSCILLATOR_TRIGGER_PCNT
 }
 
 function isMarketOversold() {
     return oscillatorSlidingAverageFast > 0 && oscillatorSlidingAverageSlow > 0 && oscillatorMinFast >0 && currentPrice < oscillatorMinFast
-        && getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast) <= -TAKE_PROFIT_OSCILLATOR_PCNT
+        && getPcntGrowth(oscillatorSlidingAverageSlow, oscillatorSlidingAverageFast) <= -OSCILLATOR_TRIGGER_PCNT
 }
 
 function getPcntGrowth(oldValue, newValue) {
