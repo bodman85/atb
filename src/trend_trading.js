@@ -56,14 +56,14 @@ window.onload = async function () {
     dataManager.pollPriceTickerFor(instrumentSymbol, ticker => {
         currentPrice = parseFloat(ticker['c']);
         document.getElementById('ttPrice').value = currentPrice;
+        if (document.getElementById("tradeAutoSwitcher").checked) {
+            autoTrade();
+        }
     });
 
     dataManager.pollBookTickerFor(instrumentSymbol, ticker => {
         currentBidPrice = parseFloat(ticker['b']);
         currentAskPrice = parseFloat(ticker['a']);
-        if (document.getElementById("tradeAutoSwitcher").checked) {
-            autoTrade();
-        }
     });
 
     dataManager.pollDepthFor(instrumentSymbol, data => {
@@ -126,7 +126,7 @@ function autoTrade() {
             placeOrder('BUY', 'STOP', stopLossPrice);
         } else { // price is swinging in channel
             if (isMarketOverbought()) {
-                console.log(`Market is overbought`);
+                console.log(`Market is OVERBOUGHT`);
                 placeOrder('SELL', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('BUY', 'LIMIT', takeProfitPrice);
@@ -134,7 +134,7 @@ function autoTrade() {
                 placeOrder('BUY', 'STOP', stopLossPrice);
 
             } else if (isMarketOversold()) {
-                console.log(`Market is oversold`);
+                console.log(`Market is OVERSOLD`);
                 placeOrder('BUY', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('SELL', 'LIMIT', takeProfitPrice);
