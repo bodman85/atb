@@ -110,9 +110,7 @@ function initAvgPrices() {
 
 function autoTrade() {
     if (!currentPosition.positionAmt) { // No position opened
-        printTrendInfo();
         if (isTrendAsc()) {
-            printTrendInfo();
             console.log(`ASCENDING trend started`);
             placeOrder('BUY', 'MARKET');
             let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
@@ -120,7 +118,6 @@ function autoTrade() {
             let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
             placeOrder('SELL', 'STOP', stopLossPrice);
         } else if (isTrendDesc()) {
-            printTrendInfo();
             console.log(`DESCENDING trend started`);
             placeOrder('SELL', 'MARKET');
             let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
@@ -130,7 +127,6 @@ function autoTrade() {
         } else { // price is swinging in channel
             if (isMarketOverbought()) {
                 console.log(`Market is overbought`);
-                printTrendInfo();
                 placeOrder('SELL', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('BUY', 'LIMIT', takeProfitPrice);
@@ -139,7 +135,6 @@ function autoTrade() {
 
             } else if (isMarketOversold()) {
                 console.log(`Market is oversold`);
-                printTrendInfo();
                 placeOrder('BUY', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('SELL', 'LIMIT', takeProfitPrice);
