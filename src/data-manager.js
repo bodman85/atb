@@ -21,6 +21,7 @@ const CURRENT_PRICES = "dapi/v1/ticker/bookTicker";
 const ORDER = "dapi/v1/order";
 const ORDERS = 'dapi/v1/openOrders';
 const POSITIONS = 'dapi/v1/positionRisk';
+const KLINES = 'dapi/v1/klines';
 
 const LISTEN_KEY = "dapi/v1/listenKey";
 
@@ -147,6 +148,11 @@ function closePositions(positions) {
     }
 }
 
+function requestKlines(symbol, interval, limit, callback) {
+    let queryString = `symbol=${symbol}&interval=${interval}&limit=${limit}`;
+    fireGetRequestWithCallback(KLINES + '?' + queryString, callback);
+}
+
 function pollPriceTickerFor(symbol, callback) {
     const ws = new W3CWebSocket(`${WEBSOCKET_URL}${symbol.toLowerCase()}@ticker`);
     ws.onmessage = function (e) {
@@ -215,6 +221,7 @@ module.exports = {
     requestPositions: requestPositions,
     closePosition: closePosition,
     closePositions: closePositions,
+      requestKlines: requestKlines, 
     pollPriceTickerFor: pollPriceTickerFor,
     pollBookTickerFor: pollBookTickerFor,
     pollDepthFor: pollDepthFor,

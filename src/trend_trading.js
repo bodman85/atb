@@ -5,7 +5,13 @@ const CircularBuffer = require("circular-buffer");
 const urlParams = new URLSearchParams(window.location.search);
 const instrumentSymbol = urlParams.get('instrument');
 
+const ONE_SECOND = 5000;
+const FIVE_SECONDS = 5000;
+const ONE_MINUTE = 60000; 
+const ONE_HOUR = 3600000; 
+
 const FORECAST_BUFFER_SIZE = 10;
+const AVG_PRICES_BUFFER_SIZE = 240;
 const FORECAST_DELTA_EDGE_VALUE = 0.1;
 
 const TREND_DELTA_PCNT = 0.05;
@@ -16,6 +22,7 @@ const LIMIT_ORDER_FEE_PCNT = 0.01;
 const LIMIT_ORDER_TRIGGER_PRICE_PCNT = 0.05;
 
 let FAIR_PRICE_DELTAS = new CircularBuffer(FORECAST_BUFFER_SIZE);
+let AVG_PRICES = new CircularBuffer(AVG_PRICES_BUFFER_SIZE);
 
 let currentPrice = 0;
 let currentBidPrice = 0;
@@ -29,9 +36,9 @@ let oscillatorMinFast = 0;
 let oscillatorSlidingAverageFast = 0;
 let oscillatorSlidingAverageSlow = 0;
 
-let slidingAverageFast = 0;
-let slidingAverageMid = 0;
-let slidingAverageSlow = 0;
+let movingAverageFast = 0;
+let movingAverageMid = 0;
+let movingAverageSlow = 0;
 
 window.onload = async function () {
     document.getElementById('ttInstrument').value = instrumentSymbol;
@@ -40,9 +47,11 @@ window.onload = async function () {
     document.getElementById("ttRemoveAllOrdersButton").addEventListener("click", function () { dataManager.cancelAllOrdersFor(instrumentSymbol) });
 
     document.getElementById('tradeAutoSwitcher').addEventListener('click', handleTradeAutoSwitcher);
-    setInterval(pollCurrentPosition, 5000);
-    setInterval(function () { pollOrders(instrumentSymbol) }, 5000);
-    setInterval(displayCurrentPosition, 1000);
+    initAvgPrices();
+    setInterval(initAvgPrices, ONE_HOUR);
+    setInterval(pollCurrentPosition, FIVE_SECONDS);
+    setInterval(function () { pollOrders(instrumentSymbol) }, FIVE_SECONDS);
+    setInterval(displayCurrentPosition, ONE_SECOND);
 
     dataManager.pollPriceTickerFor(instrumentSymbol, ticker => {
         currentPrice = parseFloat(ticker['c']);
@@ -59,7 +68,7 @@ window.onload = async function () {
 
     dataManager.pollDepthFor(instrumentSymbol, data => {
         document.getElementById('priceTrend').value = isTrendAsc() ? 'ASC' : isTrendDesc() ? 'DESC' : 'FLAT';
-        uiUtils.paintRedOrGreen(slidingAverageMid - slidingAverageSlow, 'priceTrend');
+        uiUtils.paintRedOrGreen(movingAverageMid - movingAverageSlow, 'priceTrend');
 
         let fairPriceDelta = parseFloat((computeFairPrice(data) - currentPrice) / currentPrice * 100);
         FAIR_PRICE_DELTAS.enq(fairPriceDelta);
@@ -70,31 +79,38 @@ window.onload = async function () {
         uiUtils.paintRedOrGreen(priceForecast, 'priceForecast');
     });
 
+    let lastEnq = Date.now();
+    dataManager.pollKlinesFor(instrumentSymbol, '1m', kline => {
+        if (Date.now() - lastEnq < ONE_MINUTE) {
+            AVG_PRICES.shift(); //remove latest value
+        } else {
+            lastEnq = Date.now();
+        }
+        //enqueue new or update existing value in CirculrBuffer
+        AVG_PRICES.enq(computeAverage(kline.k['l'], kline.k['h']));
+        //compute moving averages
+        oscillatorSlidingAverageSlow = computeAveragePriceForLatestMinutes(30);
+        movingAverageFast = computeAveragePriceForLatestMinutes(30);
+        movingAverageMid = computeAveragePriceForLatestMinutes(60);
+        movingAverageSlow = computeAveragePriceForLatestMinutes(120);
+    });
+
     dataManager.pollKlinesFor(instrumentSymbol, '5m', kline => {
         oscillatorMinFast = kline.k['l'];
         oscillatorMaxFast = kline.k['h'];
         oscillatorSlidingAverageFast = computeAverage(oscillatorMinFast, oscillatorMaxFast);
     });
+}
 
-    dataManager.pollKlinesFor(instrumentSymbol, '30m', kline => {
-        oscillatorSlidingAverageSlow = computeAverage(kline.k['l'], kline.k['h']);
-    });
-
-    dataManager.pollKlinesFor(instrumentSymbol, '30m', kline => {
-        slidingAverageFast = computeAverage(kline.k['l'], kline.k['h']);
-    });
-
-    dataManager.pollKlinesFor(instrumentSymbol, '1h', kline => {
-        slidingAverageMid = computeAverage(kline.k['l'], kline.k['h']);
-    });
-
-    dataManager.pollKlinesFor(instrumentSymbol, '2h', kline => {
-        slidingAverageSlow = computeAverage(kline.k['l'], kline.k['h']);
+function initAvgPrices() {
+    dataManager.requestKlines(instrumentSymbol, '1m', 240, klines => {
+        klines.forEach(kline => AVG_PRICES.enq(parseFloat(computeAverage(kline[2], kline[3])).toFixed(2)));
     });
 }
 
 function autoTrade() {
     if (!currentPosition.positionAmt) { // No position opened
+        printTrendInfo();
         if (isTrendAsc()) {
             printTrendInfo();
             console.log(`ASCENDING trend started`);
@@ -135,23 +151,24 @@ function autoTrade() {
 }
 
 function printTrendInfo() {
+    //console.log(`Latest: ${AVG_PRICES.get(0)} First: ${AVG_PRICES.get(AVG_PRICES_BUFFER_SIZE - 1)}`);
     console.log(`oscillatorSlidingAverageFast: ${oscillatorSlidingAverageFast}`);
     console.log(`oscillatorSlidingAverageSlow: ${oscillatorSlidingAverageSlow}`);
-    console.log(`slidingAverage1: ${slidingAverageFast}`);
-    console.log(`slidingAverage2: ${slidingAverageMid}`);
-    console.log(`slidingAverage3: ${slidingAverageSlow}`);
+    console.log(`movingAverageFast: ${movingAverageFast}`);
+    console.log(`movingAverageMid: ${movingAverageMid}`);
+    console.log(`movingAverageSlow: ${movingAverageSlow}`);
 }
 
 function isTrendAsc() {
-    return slidingAverageFast > 0 && slidingAverageMid > 0 && slidingAverageSlow > 0
-        && getPcntGrowth(slidingAverageMid, slidingAverageFast) >= TREND_DELTA_PCNT
-        && getPcntGrowth(slidingAverageSlow, slidingAverageMid) >= TREND_DELTA_PCNT
+    return movingAverageFast > 0 && movingAverageMid > 0 && movingAverageSlow > 0
+        && getPcntGrowth(movingAverageMid, movingAverageFast) >= TREND_DELTA_PCNT
+        && getPcntGrowth(movingAverageSlow, movingAverageMid) >= TREND_DELTA_PCNT
 }
 
 function isTrendDesc() {
-    return slidingAverageFast > 0 && slidingAverageMid > 0 && slidingAverageSlow > 0
-        && getPcntGrowth(slidingAverageFast, slidingAverageMid) >= TREND_DELTA_PCNT
-        && getPcntGrowth(slidingAverageMid, slidingAverageSlow) >= TREND_DELTA_PCNT
+    return movingAverageFast > 0 && movingAverageMid > 0 && movingAverageSlow > 0
+        && getPcntGrowth(movingAverageFast, movingAverageMid) >= TREND_DELTA_PCNT
+        && getPcntGrowth(movingAverageMid, movingAverageSlow) >= TREND_DELTA_PCNT
 }
 
 function isMarketOverbought() {
@@ -173,7 +190,15 @@ function addPcntDelta(value, delta) {
 }
 
 function computeAverage(first, second) {
-    return ((first * 1 + second * 1) / 2);
+    return parseFloat((first*1 + second*1) / 2).toFixed(2);
+}
+
+function computeAveragePriceForLatestMinutes(latestMinutes) {
+    let accu = 0;
+    for (let i = 0; i < latestMinutes; i++) {
+        accu += parseFloat(AVG_PRICES.get(i));
+    }
+    return parseFloat(accu / latestMinutes).toFixed(2);
 }
 
 function pollCurrentPosition() {
