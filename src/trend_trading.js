@@ -20,7 +20,7 @@ const OSCILLATOR_TRIGGER_PCNT = 0.5;
 const TAKE_PROFIT_OSCILLATOR_PCNT = 0.2;
 const STOP_LOSS_PRICE_PCNT = 0.25;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
-const LIMIT_ORDER_TRIGGER_PRICE_PCNT = 0.1;
+const STOP_ORDER_TRIGGER_PRICE_PCNT = 0.2;
 
 let FAIR_PRICE_DELTAS = new CircularBuffer(FORECAST_BUFFER_SIZE);
 let AVG_PRICES = new CircularBuffer(AVG_PRICES_BUFFER_SIZE);
@@ -314,7 +314,7 @@ function placeOrder(side, type, price) {
         Object.assign(order, { price: orderPrice, timeInForce: 'GTC' });
     } else if (type === 'STOP') {
         orderPrice = price;
-        let triggerPrice = (side === 'BUY' ? addPcntDelta(orderPrice, LIMIT_ORDER_TRIGGER_PRICE_PCNT) : addPcntDelta(orderPrice, -LIMIT_ORDER_TRIGGER_PRICE_PCNT));
+        let triggerPrice = (side === 'BUY' ? addPcntDelta(orderPrice, STOP_ORDER_TRIGGER_PRICE_PCNT) : addPcntDelta(orderPrice, -STOP_ORDER_TRIGGER_PRICE_PCNT));
         Object.assign(order, { price: orderPrice, stopPrice: triggerPrice, timeInForce: 'GTC' });
     }
     console.log(`Placing ${type} ${side} order with price ${orderPrice}...`);
