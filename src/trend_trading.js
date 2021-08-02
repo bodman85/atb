@@ -147,20 +147,20 @@ function autoTrade() {
             }
         }
     } else {
-        if (pendingOrders < 2) {
-            dataManager.cancelAllOrdersFor(instrumentSymbol);
-            if (currentPosition.positionAmt > 0) {
-                let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
-                placeOrder('SELL', 'LIMIT', takeProfitPrice);
-                let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
-                placeOrder('SELL', 'STOP', stopLossPrice);
-            } else if (currentPosition.positionAmt < 0) {
-                let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
-                placeOrder('BUY', 'LIMIT', takeProfitPrice);
-                let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
-                placeOrder('BUY', 'STOP', stopLossPrice);
-            }
-        }
+        //if (pendingOrders < 2) {
+        //    dataManager.cancelAllOrdersFor(instrumentSymbol);
+        //    if (currentPosition.positionAmt > 0) {
+        //        let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
+        //        placeOrder('SELL', 'LIMIT', takeProfitPrice);
+        //        let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
+        //        placeOrder('SELL', 'STOP', stopLossPrice);
+        //    } else if (currentPosition.positionAmt < 0) {
+        //        let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
+        //        placeOrder('BUY', 'LIMIT', takeProfitPrice);
+        //        let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
+        //        placeOrder('BUY', 'STOP', stopLossPrice);
+        //    }
+        //}
     }
 }
 
@@ -304,7 +304,7 @@ function placeOrder(side, type, price) {
     let orderPrice = currentPrice;
     if (type === 'MARKET') {
         //opening trade should always be a MARKET trade
-        console.log(`${Date.now().toLocaleString()} currentPosition.positionAmt = ${currentPosition.positionAmt}...`);
+        console.log(`${new Date().toLocaleString()} currentPosition = ${currentPosition}...`);
         currentPosition.positionAmt = order.quantity;
     } else if (type === 'LIMIT') {
         orderPrice = price ? price : currentBidPrice; //bid and ask prices swapped intentionally to execute limit orders immediately
