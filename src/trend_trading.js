@@ -56,12 +56,15 @@ window.onload = async function () {
     setInterval(function () { pollOrders(instrumentSymbol) }, FIVE_SECONDS);
     setInterval(displayCurrentPosition, ONE_SECOND);
 
-    dataManager.pollPriceTickerFor(instrumentSymbol, ticker => {
-        currentPrice = parseFloat(ticker['c']);
-        document.getElementById('ttPrice').value = currentPrice;
+    setInterval(function () {
         if (document.getElementById("tradeAutoSwitcher").checked) {
             autoTrade();
         }
+    }, ONE_SECOND);
+
+    dataManager.pollPriceTickerFor(instrumentSymbol, ticker => {
+        currentPrice = parseFloat(ticker['c']);
+        document.getElementById('ttPrice').value = currentPrice;
     });
 
     dataManager.pollBookTickerFor(instrumentSymbol, ticker => {
@@ -121,7 +124,6 @@ function autoTrade() {
             placeOrder('SELL', 'LIMIT', takeProfitPrice);
             let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
             placeOrder('SELL', 'STOP_MARKET', stopLossPrice);
-            return;
         } else if (isTrendDesc()) {
             console.log(`DESCENDING trend started`);
             placeOrder('SELL', 'MARKET');
@@ -129,7 +131,6 @@ function autoTrade() {
             placeOrder('BUY', 'LIMIT', takeProfitPrice);
             let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
             placeOrder('BUY', 'STOP_MARKET', stopLossPrice);
-            return;
         } else { // price is swinging in channel
             if (isMarketOverbought()) {
                 console.log(`Market is OVERBOUGHT`);
@@ -138,8 +139,6 @@ function autoTrade() {
                 placeOrder('BUY', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
                 placeOrder('BUY', 'STOP_MARKET', stopLossPrice);
-                return;
-
             } else if (isMarketOversold()) {
                 console.log(`Market is OVERSOLD`);
                 placeOrder('BUY', 'MARKET');
@@ -147,7 +146,6 @@ function autoTrade() {
                 placeOrder('SELL', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
                 placeOrder('SELL', 'STOP_MARKET', stopLossPrice);
-                return;
             }
         }
     } else {
