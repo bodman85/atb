@@ -304,7 +304,7 @@ function placeOrder(side, type, price) {
     let orderPrice = currentPrice;
     if (type === 'MARKET') {
         //opening trade should always be a MARKET trade
-        console.log(`${new Date().toLocaleString()} currentPosition = ${currentPosition}...`);
+        console.log(`${new Date().toLocaleString()} currentPosition = ${JSON.stringify(currentPosition)}...`);
         currentPosition.positionAmt = order.quantity;
     } else if (type === 'LIMIT') {
         orderPrice = price ? price : currentBidPrice; //bid and ask prices swapped intentionally to execute limit orders immediately
