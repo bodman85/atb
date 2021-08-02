@@ -115,14 +115,14 @@ function initAvgPrices() {
 async function autoTrade() {
     if (!currentPosition.positionAmt) { // No position opened
         if (isTrendAsc()) {
-            console.log(`ASCENDING trend started`);
+            console.log(`${new Date().toLocaleString()}: ASCENDING trend started`);
             await placeOrder('BUY', 'MARKET');
             let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
             placeOrder('SELL', 'LIMIT', takeProfitPrice);
             let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
             placeOrder('SELL', 'STOP_MARKET', stopLossPrice);
         } else if (isTrendDesc()) {
-            console.log(`DESCENDING trend started`);
+            console.log(`${new Date().toLocaleString()}: DESCENDING trend started`);
             await placeOrder('SELL', 'MARKET');
             let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
             placeOrder('BUY', 'LIMIT', takeProfitPrice);
@@ -130,14 +130,14 @@ async function autoTrade() {
             placeOrder('BUY', 'STOP_MARKET', stopLossPrice);
         } else { // price is swinging in channel
             if (isMarketOverbought()) {
-                console.log(`Market is OVERBOUGHT`);
+                console.log(`${new Date().toLocaleString()}: Market is OVERBOUGHT`);
                 await placeOrder('SELL', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('BUY', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
                 placeOrder('BUY', 'STOP_MARKET', stopLossPrice);
             } else if (isMarketOversold()) {
-                console.log(`Market is OVERSOLD`);
+                console.log(`${new Date().toLocaleString()}: Market is OVERSOLD`);
                 await placeOrder('BUY', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('SELL', 'LIMIT', takeProfitPrice);
@@ -304,7 +304,6 @@ function placeOrder(side, type, price) {
     switch (type) {
         case 'MARKET':
             //opening trade should always be a MARKET trade
-            //console.log(`${new Date().toLocaleString()} currentPosition = ${JSON.stringify(currentPosition)}`);
             currentPosition.positionAmt = side === 'BUY' ? order.quantity : -order.quantity;
             break;
         case 'LIMIT':
