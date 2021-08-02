@@ -120,14 +120,14 @@ function autoTrade() {
             let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
             placeOrder('SELL', 'LIMIT', takeProfitPrice);
             let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
-            placeOrder('SELL', 'STOP', stopLossPrice);
+            placeOrder('SELL', 'STOP_MARKET', stopLossPrice);
         } else if (isTrendDesc()) {
             console.log(`DESCENDING trend started`);
             placeOrder('SELL', 'MARKET');
             let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
             placeOrder('BUY', 'LIMIT', takeProfitPrice);
             let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
-            placeOrder('BUY', 'STOP', stopLossPrice);
+            placeOrder('BUY', 'STOP_MARKET', stopLossPrice);
         } else { // price is swinging in channel
             if (isMarketOverbought()) {
                 console.log(`Market is OVERBOUGHT`);
@@ -135,7 +135,7 @@ function autoTrade() {
                 let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('BUY', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
-                placeOrder('BUY', 'STOP', stopLossPrice);
+                placeOrder('BUY', 'STOP_MARKET', stopLossPrice);
 
             } else if (isMarketOversold()) {
                 console.log(`Market is OVERSOLD`);
@@ -143,7 +143,7 @@ function autoTrade() {
                 let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('SELL', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
-                placeOrder('SELL', 'STOP', stopLossPrice);
+                placeOrder('SELL', 'STOP_MARKET', stopLossPrice);
             }
         }
     } else {
@@ -312,7 +312,7 @@ function placeOrder(side, type, price) {
             orderPrice = price ? price : currentAskPrice;
         }
         Object.assign(order, { price: orderPrice, timeInForce: 'GTC' });
-    } else if (type === 'STOP_MARKET') {
+    } else if (type === 'STOP' || type === 'STOP_MARKET') {
         orderPrice = price;
         let triggerPrice = (side === 'BUY' ? addPcntDelta(orderPrice, STOP_ORDER_TRIGGER_PRICE_PCNT) : addPcntDelta(orderPrice, -STOP_ORDER_TRIGGER_PRICE_PCNT));
         Object.assign(order, { price: orderPrice, stopPrice: triggerPrice, timeInForce: 'GTC' });
