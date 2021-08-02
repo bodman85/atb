@@ -302,20 +302,27 @@ function placeOrder(side, type, price) {
         recvWindow: 30000
     }
     let orderPrice = currentPrice;
-    if (type === 'MARKET') {
-        //opening trade should always be a MARKET trade
-        console.log(`${new Date().toLocaleString()} currentPosition = ${JSON.stringify(currentPosition)}`);
-        currentPosition.positionAmt = order.quantity;
-    } else if (type === 'LIMIT') {
-        orderPrice = price ? price : currentBidPrice; //bid and ask prices swapped intentionally to execute limit orders immediately
-        if (side === 'BUY') {
-            orderPrice = price ? price : currentAskPrice;
-        }
-        Object.assign(order, { price: orderPrice, timeInForce: 'GTC' });
-    } else if (['STOP', 'STOP_MARKET'].includes(type)) {
-        orderPrice = price;
-        let triggerPrice = (side === 'BUY' ? addPcntDelta(orderPrice, STOP_ORDER_TRIGGER_PRICE_PCNT) : addPcntDelta(orderPrice, -STOP_ORDER_TRIGGER_PRICE_PCNT));
-        Object.assign(order, { price: orderPrice, stopPrice: triggerPrice, timeInForce: 'GTC' });
+    switch (type) {
+        case 'MARKET':
+            //opening trade should always be a MARKET trade
+            console.log(`${new Date().toLocaleString()} currentPosition = ${JSON.stringify(currentPosition)}`);
+            currentPosition.positionAmt = order.quantity;
+            break;
+        case 'LIMIT':
+            orderPrice = price ? price : currentBidPrice; //bid and ask prices swapped intentionally to execute limit orders immediately
+            if (side === 'BUY') {
+                orderPrice = price ? price : currentAskPrice;
+            }
+            Object.assign(order, { price: orderPrice, timeInForce: 'GTC' });
+            break;
+        case 'STOP':
+            orderPrice = price;
+            let triggerPrice = (side === 'BUY' ? addPcntDelta(orderPrice, STOP_ORDER_TRIGGER_PRICE_PCNT) : addPcntDelta(orderPrice, -STOP_ORDER_TRIGGER_PRICE_PCNT));
+            Object.assign(order, { price: price, stopPrice: triggerPrice, timeInForce: 'GTC' });
+            break;
+        case 'STOP_MARKET':
+            Object.assign(order, {stopPrice: price, timeInForce: 'GTC' });
+            break;
     }
     console.log(`Placing ${type} ${side} order with price ${orderPrice}...`);
     dataManager.placeOrder(order);
