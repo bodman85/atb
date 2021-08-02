@@ -16,7 +16,7 @@ const FORECAST_DELTA_EDGE_VALUE = 0.1;
 
 const FOLLOW_TREND_TRIGGER_PCNT = 0.1;
 const TAKE_PROFIT_FOLLOW_TREND_PCNT = 0.3;
-const OSCILLATOR_TRIGGER_PCNT = 0.4;
+const OSCILLATOR_TRIGGER_PCNT = 0.5;
 const TAKE_PROFIT_OSCILLATOR_PCNT = 0.2;
 const STOP_LOSS_PRICE_PCNT = 0.25;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
@@ -147,7 +147,7 @@ function autoTrade() {
             }
         }
     } else {
-        if (pendingOrders === 1) {
+        if (pendingOrders < 2) {
             dataManager.cancelAllOrdersFor(instrumentSymbol);
             if (currentPosition.positionAmt > 0) {
                 let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
@@ -304,6 +304,7 @@ function placeOrder(side, type, price) {
     let orderPrice = currentPrice;
     if (type === 'MARKET') {
         //opening trade should always be a MARKET trade
+        console.log(`${Date.now().toLocaleString()} currentPosition.positionAmt = ${currentPosition.positionAmt}...`);
         currentPosition.positionAmt = order.quantity;
     } else if (type === 'LIMIT') {
         orderPrice = price ? price : currentBidPrice; //bid and ask prices swapped intentionally to execute limit orders immediately
