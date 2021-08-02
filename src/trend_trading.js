@@ -202,7 +202,7 @@ function getPcntGrowth(oldValue, newValue) {
 }
 
 function addPcntDelta(value, delta) {
-    return parseFloat(value + delta / 100 * value).toFixed(2);
+    return parseFloat(value*1 + delta / 100 * value).toFixed(2);
 }
 
 function computeAverage(first, second) {
@@ -312,7 +312,7 @@ function placeOrder(side, type, price) {
             orderPrice = price ? price : currentAskPrice;
         }
         Object.assign(order, { price: orderPrice, timeInForce: 'GTC' });
-    } else if (type === 'STOP' || type === 'STOP_MARKET') {
+    } else if (['STOP', 'STOP_MARKET'].includes(type)) {
         orderPrice = price;
         let triggerPrice = (side === 'BUY' ? addPcntDelta(orderPrice, STOP_ORDER_TRIGGER_PRICE_PCNT) : addPcntDelta(orderPrice, -STOP_ORDER_TRIGGER_PRICE_PCNT));
         Object.assign(order, { price: orderPrice, stopPrice: triggerPrice, timeInForce: 'GTC' });
