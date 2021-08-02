@@ -20,7 +20,7 @@ const OSCILLATOR_TRIGGER_PCNT = 0.5;
 const TAKE_PROFIT_OSCILLATOR_PCNT = 0.2;
 const STOP_LOSS_PRICE_PCNT = 0.25;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
-const STOP_ORDER_TRIGGER_PRICE_PCNT = 0.2;
+const STOP_ORDER_TRIGGER_PRICE_PCNT = 0.1;
 
 let FAIR_PRICE_DELTAS = new CircularBuffer(FORECAST_BUFFER_SIZE);
 let AVG_PRICES = new CircularBuffer(AVG_PRICES_BUFFER_SIZE);
@@ -298,13 +298,13 @@ function placeOrder(side, type, price) {
         side: side,
         symbol: instrumentSymbol,
         quantity: document.getElementById('ttQuantity').value,
-        type: type,
+        type: type,s
         recvWindow: 30000
     }
     let orderPrice = currentPrice;
     if (type === 'MARKET') {
         //opening trade should always be a MARKET trade
-        console.log(`${new Date().toLocaleString()} currentPosition = ${JSON.stringify(currentPosition)}...`);
+        console.log(`${new Date().toLocaleString()} currentPosition = ${JSON.stringify(currentPosition)}`);
         currentPosition.positionAmt = order.quantity;
     } else if (type === 'LIMIT') {
         orderPrice = price ? price : currentBidPrice; //bid and ask prices swapped intentionally to execute limit orders immediately
@@ -312,7 +312,7 @@ function placeOrder(side, type, price) {
             orderPrice = price ? price : currentAskPrice;
         }
         Object.assign(order, { price: orderPrice, timeInForce: 'GTC' });
-    } else if (type === 'STOP') {
+    } else if (type === 'STOP_MARKET') {
         orderPrice = price;
         let triggerPrice = (side === 'BUY' ? addPcntDelta(orderPrice, STOP_ORDER_TRIGGER_PRICE_PCNT) : addPcntDelta(orderPrice, -STOP_ORDER_TRIGGER_PRICE_PCNT));
         Object.assign(order, { price: orderPrice, stopPrice: triggerPrice, timeInForce: 'GTC' });
