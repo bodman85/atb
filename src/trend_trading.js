@@ -56,15 +56,12 @@ window.onload = async function () {
     setInterval(function () { pollOrders(instrumentSymbol) }, FIVE_SECONDS);
     setInterval(displayCurrentPosition, ONE_SECOND);
 
-    setInterval(function () {
-        if (document.getElementById("tradeAutoSwitcher").checked) {
-            autoTrade();
-        }
-    }, ONE_SECOND);
-
     dataManager.pollPriceTickerFor(instrumentSymbol, ticker => {
         currentPrice = parseFloat(ticker['c']);
         document.getElementById('ttPrice').value = currentPrice;
+        if (document.getElementById("tradeAutoSwitcher").checked) {
+            autoTrade();
+        }
     });
 
     dataManager.pollBookTickerFor(instrumentSymbol, ticker => {
@@ -115,18 +112,18 @@ function initAvgPrices() {
     });
 }
 
-function autoTrade() {
+async function autoTrade() {
     if (!currentPosition.positionAmt) { // No position opened
         if (isTrendAsc()) {
             console.log(`ASCENDING trend started`);
-            placeOrder('BUY', 'MARKET');
+            await placeOrder('BUY', 'MARKET');
             let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
             placeOrder('SELL', 'LIMIT', takeProfitPrice);
             let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
             placeOrder('SELL', 'STOP_MARKET', stopLossPrice);
         } else if (isTrendDesc()) {
             console.log(`DESCENDING trend started`);
-            placeOrder('SELL', 'MARKET');
+            await placeOrder('SELL', 'MARKET');
             let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
             placeOrder('BUY', 'LIMIT', takeProfitPrice);
             let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
@@ -134,14 +131,14 @@ function autoTrade() {
         } else { // price is swinging in channel
             if (isMarketOverbought()) {
                 console.log(`Market is OVERBOUGHT`);
-                placeOrder('SELL', 'MARKET');
+                await placeOrder('SELL', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('BUY', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
                 placeOrder('BUY', 'STOP_MARKET', stopLossPrice);
             } else if (isMarketOversold()) {
                 console.log(`Market is OVERSOLD`);
-                placeOrder('BUY', 'MARKET');
+                await placeOrder('BUY', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('SELL', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
@@ -307,8 +304,8 @@ function placeOrder(side, type, price) {
     switch (type) {
         case 'MARKET':
             //opening trade should always be a MARKET trade
-            console.log(`${new Date().toLocaleString()} currentPosition = ${JSON.stringify(currentPosition)}`);
-            currentPosition.positionAmt = order.quantity;
+            //console.log(`${new Date().toLocaleString()} currentPosition = ${JSON.stringify(currentPosition)}`);
+            currentPosition.positionAmt = side === 'BUY' ? order.quantity : -order.quantity;
             break;
         case 'LIMIT':
             orderPrice = price ? price : currentBidPrice; //bid and ask prices swapped intentionally to execute limit orders immediately
