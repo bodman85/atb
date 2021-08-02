@@ -298,7 +298,7 @@ function placeOrder(side, type, price) {
         side: side,
         symbol: instrumentSymbol,
         quantity: document.getElementById('ttQuantity').value,
-        type: type,s
+        type: type,
         recvWindow: 30000
     }
     let orderPrice = currentPrice;
