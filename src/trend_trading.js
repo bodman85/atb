@@ -57,11 +57,11 @@ window.onload = function () {
     setInterval(function () { pollOrders(instrumentSymbol) }, FIVE_SECONDS);
     setInterval(displayCurrentPosition, ONE_SECOND);
 
-    dataManager.pollPriceTickerFor(instrumentSymbol, async ticker => {
+    dataManager.pollPriceTickerFor(instrumentSymbol, ticker => {
         currentPrice = parseFloat(ticker['c']);
         document.getElementById('ttPrice').value = currentPrice;
         if (document.getElementById("tradeAutoSwitcher").checked) {
-            await autoTrade();
+            autoTrade();
         }
     });
 

@@ -159,9 +159,9 @@ function requestKlines(symbol, interval, limit, callback) {
 
 function pollPriceTickerFor(symbol, callback) {
     const ws = new W3CWebSocket(`${WEBSOCKET_URL}${symbol.toLowerCase()}@ticker`);
-    ws.onmessage = function (e) {
+    ws.onmessage = async function (e) {
         let ticker = JSON.parse(e.data);
-        callback(ticker);
+        await callback(ticker);
     };
 }
 
