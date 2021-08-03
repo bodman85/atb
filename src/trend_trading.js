@@ -30,7 +30,6 @@ let currentBidPrice = 0;
 let currentAskPrice = 0;
 let totalPnlPcnt = 0;
 
-let pendingOrders = -1;
 let currentPosition = {};
 
 let oscillatorMaxFast = 0;
@@ -38,7 +37,9 @@ let oscillatorMinFast = 0;
 let oscillatorSlidingAverageFast = 0;
 let oscillatorSlidingAverageSlow = 0;
 
-let trend_1m = 0;
+let trend_5m = 0;
+let trend_15m = 0;
+let trend_30m = 0;
 let movingAverageFast = 0;
 let movingAverageMid = 0;
 let movingAverageSlow = 0;
@@ -91,12 +92,23 @@ window.onload = async function () {
         }
         //enqueue new or update existing value in CirculrBuffer
         AVG_PRICES.enq(computeAverage(kline.k['l'], kline.k['h']));
-        trend_1m = getPcntGrowth(kline.k['o'], kline.k['c']);
         //compute moving averages
         oscillatorSlidingAverageSlow = computeAveragePriceForLatestMinutes(30);
         movingAverageFast = computeAveragePriceForLatestMinutes(60);
         movingAverageMid = computeAveragePriceForLatestMinutes(120);
         movingAverageSlow = computeAveragePriceForLatestMinutes(240);
+    });
+
+    dataManager.pollKlinesFor(instrumentSymbol, '5m', kline => {
+        trend_5m = getPcntGrowth(kline.k['o'], kline.k['c']);
+    });
+
+    dataManager.pollKlinesFor(instrumentSymbol, '15m', kline => {
+        trend_15m = getPcntGrowth(kline.k['o'], kline.k['c']);
+    });
+
+    dataManager.pollKlinesFor(instrumentSymbol, '30m', kline => {
+        trend_30m = getPcntGrowth(kline.k['o'], kline.k['c']);
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '5m', kline => {
@@ -115,14 +127,14 @@ function initAvgPrices() {
 async function autoTrade() {
     if (!currentPosition.positionAmt) { // No position opened
         if (isTrendAsc()) {
-            console.log(`${new Date().toLocaleString()}: ASCENDING trend started`);
+            console.log(`ASCENDING trend detected at ${new Date().toLocaleString()}`);
             await placeOrder('BUY', 'MARKET');
             let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
             placeOrder('SELL', 'LIMIT', takeProfitPrice);
             let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
             placeOrder('SELL', 'STOP_MARKET', stopLossPrice);
         } else if (isTrendDesc()) {
-            console.log(`${new Date().toLocaleString()}: DESCENDING trend started`);
+            console.log(`DESCENDING trend detected at ${new Date().toLocaleString()}`);
             await placeOrder('SELL', 'MARKET');
             let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
             placeOrder('BUY', 'LIMIT', takeProfitPrice);
@@ -130,14 +142,14 @@ async function autoTrade() {
             placeOrder('BUY', 'STOP_MARKET', stopLossPrice);
         } else { // price is swinging in channel
             if (isMarketOverbought()) {
-                console.log(`${new Date().toLocaleString()}: Market is OVERBOUGHT`);
+                console.log(`Market is OVERBOUGHT at ${new Date().toLocaleString()}`);
                 await placeOrder('SELL', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('BUY', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
                 placeOrder('BUY', 'STOP_MARKET', stopLossPrice);
             } else if (isMarketOversold()) {
-                console.log(`${new Date().toLocaleString()}: Market is OVERSOLD`);
+                console.log(`Market is OVERSOLD at ${new Date().toLocaleString()}`);
                 await placeOrder('BUY', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('SELL', 'LIMIT', takeProfitPrice);
@@ -145,21 +157,6 @@ async function autoTrade() {
                 placeOrder('SELL', 'STOP_MARKET', stopLossPrice);
             }
         }
-    } else {
-        //if (pendingOrders < 2) {
-        //    dataManager.cancelAllOrdersFor(instrumentSymbol);
-        //    if (currentPosition.positionAmt > 0) {
-        //        let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
-        //        placeOrder('SELL', 'LIMIT', takeProfitPrice);
-        //        let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
-        //        placeOrder('SELL', 'STOP', stopLossPrice);
-        //    } else if (currentPosition.positionAmt < 0) {
-        //        let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
-        //        placeOrder('BUY', 'LIMIT', takeProfitPrice);
-        //        let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
-        //        placeOrder('BUY', 'STOP', stopLossPrice);
-        //    }
-        //}
     }
 }
 
@@ -176,14 +173,14 @@ function isTrendAsc() {
     return movingAverageFast > 0 && movingAverageMid > 0 && movingAverageSlow > 0
         && getPcntGrowth(movingAverageMid, movingAverageFast) >= FOLLOW_TREND_TRIGGER_PCNT
         && getPcntGrowth(movingAverageSlow, movingAverageMid) >= FOLLOW_TREND_TRIGGER_PCNT
-        && trend_1m > 0
+        && trend_5m > 0 && trend_15m > 0 && trend_30m > 0
 }
 
 function isTrendDesc() {
     return movingAverageFast > 0 && movingAverageMid > 0 && movingAverageSlow > 0
-        && getPcntGrowth(movingAverageFast, movingAverageMid) >= FOLLOW_TREND_TRIGGER_PCNT
-        && getPcntGrowth(movingAverageMid, movingAverageSlow) >= FOLLOW_TREND_TRIGGER_PCNT
-        && trend_1m < 0
+        && getPcntGrowth(movingAverageMid, movingAverageFast) <= -FOLLOW_TREND_TRIGGER_PCNT
+        && getPcntGrowth(movingAverageSlow, movingAverageMid) <= -FOLLOW_TREND_TRIGGER_PCNT
+        && trend_5m < 0 && trend_15m < 0 && trend_30m < 0
 }
 
 function isMarketOverbought() {
@@ -305,6 +302,7 @@ function placeOrder(side, type, price) {
         case 'MARKET':
             //opening trade should always be a MARKET trade
             currentPosition.positionAmt = side === 'BUY' ? order.quantity : -order.quantity;
+            console.log(`Placing ${type} ${side} order with price ${orderPrice}...`);
             break;
         case 'LIMIT':
             orderPrice = price ? price : currentBidPrice; //bid and ask prices swapped intentionally to execute limit orders immediately
@@ -322,7 +320,6 @@ function placeOrder(side, type, price) {
             Object.assign(order, {stopPrice: price, timeInForce: 'GTC' });
             break;
     }
-    console.log(`Placing ${type} ${side} order with price ${orderPrice}...`);
     dataManager.placeOrder(order);
 }
 
