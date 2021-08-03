@@ -340,7 +340,8 @@ function pollOrders(symbol) {
             let row = uiUtils.createTableRow();
             row.appendChild(uiUtils.createTextColumn(order.orderId));
             row.appendChild(uiUtils.createTextColumn(order.symbol));
-            row.appendChild(uiUtils.createTextColumn(parseFloat(order.price).toFixed(4)));
+            let price = order.type === 'LIMIT' ? order.price : order.stopPrice;
+            row.appendChild(uiUtils.createTextColumn(parseFloat(price).toFixed(4)));
             if (order.side.toUpperCase() === 'BUY') {
                 row.appendChild(uiUtils.createTextColumn(order.side, 'text-success'));
             } else {
