@@ -44,7 +44,7 @@ let movingAverageFast = 0;
 let movingAverageMid = 0;
 let movingAverageSlow = 0;
 
-window.onload = async function () {
+window.onload = function () {
     document.getElementById('ttInstrument').value = instrumentSymbol;
     document.getElementById('buyInstrumentButton').addEventListener('click', function () { placeOrder('BUY', 'MARKET') });
     document.getElementById('sellInstrumentButton').addEventListener('click', function () { placeOrder('SELL', 'MARKET') });
@@ -57,11 +57,11 @@ window.onload = async function () {
     setInterval(function () { pollOrders(instrumentSymbol) }, FIVE_SECONDS);
     setInterval(displayCurrentPosition, ONE_SECOND);
 
-    dataManager.pollPriceTickerFor(instrumentSymbol, ticker => {
+    dataManager.pollPriceTickerFor(instrumentSymbol, async ticker => {
         currentPrice = parseFloat(ticker['c']);
         document.getElementById('ttPrice').value = currentPrice;
         if (document.getElementById("tradeAutoSwitcher").checked) {
-            autoTrade();
+            await autoTrade();
         }
     });
 
@@ -124,18 +124,18 @@ function initAvgPrices() {
     });
 }
 
-async function autoTrade() {
+function autoTrade() {
     if (!currentPosition.positionAmt) { // No position opened
         if (isTrendAsc()) {
             console.log(`ASCENDING trend detected at ${new Date().toLocaleString()}`);
-            await placeOrder('BUY', 'MARKET');
+            placeOrder('BUY', 'MARKET');
             let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
             placeOrder('SELL', 'LIMIT', takeProfitPrice);
             let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
             placeOrder('SELL', 'STOP_MARKET', stopLossPrice);
         } else if (isTrendDesc()) {
             console.log(`DESCENDING trend detected at ${new Date().toLocaleString()}`);
-            await placeOrder('SELL', 'MARKET');
+            placeOrder('SELL', 'MARKET');
             let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
             placeOrder('BUY', 'LIMIT', takeProfitPrice);
             let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
@@ -143,14 +143,14 @@ async function autoTrade() {
         } else { // price is swinging in channel
             if (isMarketOverbought()) {
                 console.log(`Market is OVERBOUGHT at ${new Date().toLocaleString()}`);
-                await placeOrder('SELL', 'MARKET');
+                placeOrder('SELL', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('BUY', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
                 placeOrder('BUY', 'STOP_MARKET', stopLossPrice);
             } else if (isMarketOversold()) {
                 console.log(`Market is OVERSOLD at ${new Date().toLocaleString()}`);
-                await placeOrder('BUY', 'MARKET');
+                placeOrder('BUY', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('SELL', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
