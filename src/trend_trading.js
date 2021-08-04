@@ -31,6 +31,7 @@ let currentAskPrice = 0;
 let totalPnlPcnt = 0;
 
 let currentPosition = {};
+let currentStopLossPrice = 0;
 
 let oscillatorMaxFast = 0;
 let oscillatorMinFast = 0;
@@ -134,18 +135,18 @@ function initAvgPrices() {
     });
 }
 
-function autoTrade() {
+async function autoTrade() {
     if (!currentPosition.positionAmt) { // No position opened
         if (isTrendAsc()) {
             console.log(`ASCENDING trend detected at ${new Date().toLocaleString()}`);
-            placeOrder('BUY', 'MARKET');
+            await placeOrder('BUY', 'MARKET');
             let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
             placeOrder('SELL', 'LIMIT', takeProfitPrice);
             let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
             placeOrder('SELL', 'STOP_MARKET', stopLossPrice);
         } else if (isTrendDesc()) {
             console.log(`DESCENDING trend detected at ${new Date().toLocaleString()}`);
-            placeOrder('SELL', 'MARKET');
+            await placeOrder('SELL', 'MARKET');
             let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
             placeOrder('BUY', 'LIMIT', takeProfitPrice);
             let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
@@ -153,20 +154,35 @@ function autoTrade() {
         } else { // price is swinging in channel
             if (isMarketOverbought()) {
                 console.log(`Market is OVERBOUGHT at ${new Date().toLocaleString()}`);
-                placeOrder('SELL', 'MARKET');
+                await placeOrder('SELL', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('BUY', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
                 placeOrder('BUY', 'STOP_MARKET', stopLossPrice);
             } else if (isMarketOversold()) {
                 console.log(`Market is OVERSOLD at ${new Date().toLocaleString()}`);
-                placeOrder('BUY', 'MARKET');
+                await placeOrder('BUY', 'MARKET');
                 let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_OSCILLATOR_PCNT);
                 placeOrder('SELL', 'LIMIT', takeProfitPrice);
                 let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
                 placeOrder('SELL', 'STOP_MARKET', stopLossPrice);
             }
         }
+    } else {
+        if (currentPosition.positionAmt > 0) { //long position
+            if (currentStopLossPrice > 0 && getPcntGrowth(currentStopLossPrice, currentPrice) > 1.6 * STOP_LOSS_PRICE_PCNT) {
+                let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
+                placeOrder('SELL', 'STOP_MARKET', stopLossPrice);
+            }
+        }
+        if (currentPosition.positionAmt < 0) { //short position
+            if (currentStopLossPrice > 0 && getPcntGrowth(currentStopLossPrice, currentPrice) < -1.6 * STOP_LOSS_PRICE_PCNT) {
+                let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
+                placeOrder('BUY', 'STOP_MARKET', stopLossPrice);
+            }
+        }
+
+
     }
 }
 
@@ -204,7 +220,7 @@ function isMarketOversold() {
 }
 
 function getPcntGrowth(oldValue, newValue) {
-    return ((newValue - oldValue) / oldValue) * 100;
+    return ((newValue*1 - oldValue*1) / oldValue) * 100;
 }
 
 function addPcntDelta(value, delta) {
@@ -231,6 +247,7 @@ function pollCurrentPosition() {
                 totalPnlPcnt += parseFloat(currentPosition.unRealizedProfit);
             }
             currentPosition = {};
+            currentStopLossPrice = 0;
             //console.log(`Cancelling all pending limit orders...`);
             dataManager.cancelAllOrdersFor(instrumentSymbol);
         } else {
@@ -327,7 +344,8 @@ function placeOrder(side, type, price) {
             Object.assign(order, { price: price, stopPrice: triggerPrice, timeInForce: 'GTC' });
             break;
         case 'STOP_MARKET':
-            Object.assign(order, {stopPrice: price, timeInForce: 'GTC' });
+            Object.assign(order, { stopPrice: price, timeInForce: 'GTC' });
+            currentStopLossPrice = price;
             break;
     }
     dataManager.placeOrder(order);
