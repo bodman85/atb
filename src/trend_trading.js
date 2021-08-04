@@ -31,7 +31,7 @@ let currentAskPrice = 0;
 let totalPnlPcnt = 0;
 
 let currentPosition = {};
-let currentStopLossPrice = 0;
+let currentStopOrder = {};
 
 let oscillatorMaxFast = 0;
 let oscillatorMinFast = 0;
@@ -169,20 +169,18 @@ function autoTrade() {
             }
         }
     } else {
-        if (currentPosition.positionAmt > 0) { //long position
-            if (currentStopLossPrice > 0 && getPcntGrowth(currentStopLossPrice, currentPrice) > 1.6 * STOP_LOSS_PRICE_PCNT) {
+        if (currentPosition.positionAmt > 0 && !dataManager.isEmpty(currentStopOrder)) { //long position
+            if (getPcntGrowth(currentStopOrder.price, currentPrice) > 1.6 * STOP_LOSS_PRICE_PCNT) {
                 let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
-                placeOrder('SELL', 'STOP_MARKET', stopLossPrice);
+                dataManager.cancelOrder(currentStopOrder, placeOrder('SELL', 'STOP_MARKET', stopLossPrice));
             }
         }
-        if (currentPosition.positionAmt < 0) { //short position
-            if (currentStopLossPrice > 0 && getPcntGrowth(currentStopLossPrice, currentPrice) < -1.6 * STOP_LOSS_PRICE_PCNT) {
+        if (currentPosition.positionAmt < 0 && !dataManager.isEmpty(currentStopOrder)) { //short position
+            if (getPcntGrowth(currentStopOrder.price, currentPrice) < -1.6 * STOP_LOSS_PRICE_PCNT) {
                 let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
-                placeOrder('BUY', 'STOP_MARKET', stopLossPrice);
+                dataManager.cancelOrder(currentStopOrder, placeOrder('BUY', 'STOP_MARKET', stopLossPrice));
             }
         }
-
-
     }
 }
 
@@ -247,7 +245,7 @@ function pollCurrentPosition() {
                 totalPnlPcnt += parseFloat(currentPosition.unRealizedProfit);
             }
             currentPosition = {};
-            currentStopLossPrice = 0;
+            currentStopOrder = {};
             //console.log(`Cancelling all pending limit orders...`);
             dataManager.cancelAllOrdersFor(instrumentSymbol);
         } else {
@@ -345,7 +343,7 @@ function placeOrder(side, type, price) {
             break;
         case 'STOP_MARKET':
             Object.assign(order, { stopPrice: price, timeInForce: 'GTC' });
-            currentStopLossPrice = price;
+            currentStopOrder = order;
             break;
     }
     dataManager.placeOrder(order);
