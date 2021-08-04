@@ -170,12 +170,14 @@ function autoTrade() {
         }
     } else {
         if (currentPosition.positionAmt > 0 && !dataManager.isEmpty(currentStopOrder)) { //long position
+            console.log(`getPcntGrowth(currentStopOrder.price, currentPrice): ${getPcntGrowth(currentStopOrder.price, currentPrice)}`);
             if (getPcntGrowth(currentStopOrder.price, currentPrice) > 1.6 * STOP_LOSS_PRICE_PCNT) {
                 let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
                 dataManager.cancelOrder(currentStopOrder, placeOrder('SELL', 'STOP_MARKET', stopLossPrice));
             }
         }
         if (currentPosition.positionAmt < 0 && !dataManager.isEmpty(currentStopOrder)) { //short position
+            console.log(`getPcntGrowth(currentStopOrder.price, currentPrice): ${getPcntGrowth(currentStopOrder.price, currentPrice)}`);
             if (getPcntGrowth(currentStopOrder.price, currentPrice) < -1.6 * STOP_LOSS_PRICE_PCNT) {
                 let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
                 dataManager.cancelOrder(currentStopOrder, placeOrder('BUY', 'STOP_MARKET', stopLossPrice));
