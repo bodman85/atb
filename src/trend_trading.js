@@ -218,7 +218,7 @@ function isMarketOversold() {
 }
 
 function getPcntGrowth(oldValue, newValue) {
-    return ((newValue*1 - oldValue*1) / oldValue) * 100;
+    return ((newValue*1 - oldValue*1) / oldValue*1) * 100;
 }
 
 function addPcntDelta(value, delta) {
