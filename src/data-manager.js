@@ -157,12 +157,15 @@ function requestKlines(symbol, interval, limit, callback) {
     fireGetRequestWithCallback(KLINES + '?' + queryString, callback);
 }
 
-function pollPriceTickerFor(symbol, callback) {
+async function pollPriceTickerFor(symbol, callback) {
     const ws = new W3CWebSocket(`${WEBSOCKET_URL}${symbol.toLowerCase()}@ticker`);
-    ws.onmessage = async function (e) {
-        let ticker = JSON.parse(e.data);
-        await callback(ticker);
-    };
+    try {
+        ws.onmessage = await function (e) {
+            callback(JSON.parse(e.data));
+        }
+    } catch (error) {
+        console.log("ooops ", error);
+    }
 }
 
 function pollBookTickerFor(symbol, callback) {
