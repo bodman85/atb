@@ -169,16 +169,14 @@ function autoTrade() {
             }
         }
     } else {
-        if (currentPosition.positionAmt > 0 && !dataManager.isEmpty(currentStopOrder)) { //long position
-            console.log(`getPcntGrowth(currentStopOrder.price, currentPrice): ${getPcntGrowth(currentStopOrder.price, currentPrice)}`);
-            if (getPcntGrowth(currentStopOrder.price, currentPrice) > 1.6 * STOP_LOSS_PRICE_PCNT) {
+        if (currentPosition.positionAmt > 0) { //long position
+            if (getPcntGrowth(currentStopOrder.stopPrice, currentPrice) > 1.6 * STOP_LOSS_PRICE_PCNT) {
                 let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
                 dataManager.cancelOrder(currentStopOrder, placeOrder('SELL', 'STOP_MARKET', stopLossPrice));
             }
         }
-        if (currentPosition.positionAmt < 0 && !dataManager.isEmpty(currentStopOrder)) { //short position
-            console.log(`getPcntGrowth(currentStopOrder.price, currentPrice): ${getPcntGrowth(currentStopOrder.price, currentPrice)}`);
-            if (getPcntGrowth(currentStopOrder.price, currentPrice) < -1.6 * STOP_LOSS_PRICE_PCNT) {
+        if (currentPosition.positionAmt < 0) { //short position
+            if (getPcntGrowth(currentStopOrder.stopPrice, currentPrice) < -1.6 * STOP_LOSS_PRICE_PCNT) {
                 let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
                 dataManager.cancelOrder(currentStopOrder, placeOrder('BUY', 'STOP_MARKET', stopLossPrice));
             }
@@ -247,7 +245,6 @@ function pollCurrentPosition() {
                 totalPnlPcnt += parseFloat(currentPosition.unRealizedProfit);
             }
             currentPosition = {};
-            currentStopOrder = {};
             //console.log(`Cancelling all pending limit orders...`);
             dataManager.cancelAllOrdersFor(instrumentSymbol);
         } else {
@@ -320,7 +317,7 @@ function placeOrder(side, type, price) {
     let order = {
         side: side,
         symbol: instrumentSymbol,
-        quantity: document.getElementById('ttQuantity').value,
+        quantity: 1 * document.getElementById('ttQuantity').value,
         type: type,
         recvWindow: 30000
     }
@@ -345,16 +342,18 @@ function placeOrder(side, type, price) {
             break;
         case 'STOP_MARKET':
             Object.assign(order, { stopPrice: price, timeInForce: 'GTC' });
-            currentStopOrder = order;
             break;
     }
-    dataManager.placeOrder(order);
+    dataManager.placeOrder(order, order => {
+        if (order.type === 'STOP_MARKET') {
+            currentStopOrder = order;
+        }
+    });
 }
 
 function pollOrders(symbol) {
     dataManager.requestOrders(symbol, orders => {
         let filteredOrders = orders.filter(o => o.status === 'NEW');
-        pendingOrders = filteredOrders.length;
         if (filteredOrders.length > 0) {
             uiUtils.showElement("ttRemoveAllOrdersButton");
         } else {
@@ -372,10 +371,15 @@ function pollOrders(symbol) {
             } else {
                 row.appendChild(uiUtils.createTextColumn(order.side, 'text-danger'));
             }
+            row.appendChild(uiUtils.createTextColumn(order.type));
             row.appendChild(uiUtils.createTextColumn(order.origQty));
-            row.appendChild(uiUtils.createTextColumn(order.executedQty));
             row.appendChild(uiUtils.createIconButtonColumn("fa-times", function () { dataManager.cancelOrder(order) }));
             document.getElementById("openOrdersDataGrid").appendChild(row);
+
+            //handle page refresh when position exists
+            if (order.type === 'STOP_MARKET') {
+                currentStopOrder = order;
+            }
         }
     });
 }
