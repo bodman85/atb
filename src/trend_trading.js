@@ -37,6 +37,8 @@ let oscillatorMinFast = 0;
 let oscillatorSlidingAverageFast = 0;
 let oscillatorSlidingAverageSlow = 0;
 
+let trend_1m = 0;
+let trend_3m = 0;
 let trend_5m = 0;
 let trend_15m = 0;
 let trend_30m = 0;
@@ -97,6 +99,14 @@ window.onload = function () {
         movingAverageFast = computeAveragePriceForLatestMinutes(60);
         movingAverageMid = computeAveragePriceForLatestMinutes(120);
         movingAverageSlow = computeAveragePriceForLatestMinutes(240);
+    });
+
+    dataManager.pollKlinesFor(instrumentSymbol, '1m', kline => {
+        trend_1m = getPcntGrowth(kline.k['o'], kline.k['c']);
+    });
+
+    dataManager.pollKlinesFor(instrumentSymbol, '3m', kline => {
+        trend_3m = getPcntGrowth(kline.k['o'], kline.k['c']);
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '5m', kline => {
@@ -173,14 +183,14 @@ function isTrendAsc() {
     return movingAverageFast > 0 && movingAverageMid > 0 && movingAverageSlow > 0
         && getPcntGrowth(movingAverageMid, movingAverageFast) >= FOLLOW_TREND_TRIGGER_PCNT
         && getPcntGrowth(movingAverageSlow, movingAverageMid) >= FOLLOW_TREND_TRIGGER_PCNT
-        && trend_5m > 0 && trend_15m > 0 && trend_30m > 0
+        && trend_1m > 0 && trend_3m > 0 && trend_5m > 0 && trend_15m > 0 && trend_30m > 0
 }
 
 function isTrendDesc() {
     return movingAverageFast > 0 && movingAverageMid > 0 && movingAverageSlow > 0
         && getPcntGrowth(movingAverageMid, movingAverageFast) <= -FOLLOW_TREND_TRIGGER_PCNT
         && getPcntGrowth(movingAverageSlow, movingAverageMid) <= -FOLLOW_TREND_TRIGGER_PCNT
-        && trend_5m < 0 && trend_15m < 0 && trend_30m < 0
+        && trend_1m < 0 && trend_3m < 0 && trend_5m < 0 && trend_15m < 0 && trend_30m < 0
 }
 
 function isMarketOverbought() {
