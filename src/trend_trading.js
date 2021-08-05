@@ -15,7 +15,7 @@ const AVG_PRICES_BUFFER_SIZE = 240;
 const FORECAST_DELTA_EDGE_VALUE = 0.1;
 
 const FOLLOW_TREND_TRIGGER_PCNT = 0.15;
-const TAKE_PROFIT_FOLLOW_TREND_PCNT = 0.5;
+const TAKE_PROFIT_FOLLOW_TREND_PCNT = 0.75;
 const OSCILLATOR_TRIGGER_PCNT = 1;
 const TAKE_PROFIT_OSCILLATOR_PCNT = 0.5;
 const STOP_LOSS_PRICE_PCNT = 0.25;
@@ -171,14 +171,16 @@ function autoTrade() {
     } else {
         if (currentPosition.positionAmt > 0) { //long position
             if (getPcntGrowth(currentStopOrder.stopPrice, currentPrice) > 1.6 * STOP_LOSS_PRICE_PCNT) {
-                let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
-                dataManager.cancelOrder(currentStopOrder, placeOrder('SELL', 'STOP_MARKET', stopLossPrice));
+                dataManager.cancelAllOrdersFor(instrumentSymbol);
+                placeStopLossOrder();
+                placeTakeProfitOrder();
             }
         }
         if (currentPosition.positionAmt < 0) { //short position
             if (getPcntGrowth(currentStopOrder.stopPrice, currentPrice) < -1.6 * STOP_LOSS_PRICE_PCNT) {
-                let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
-                dataManager.cancelOrder(currentStopOrder, placeOrder('BUY', 'STOP_MARKET', stopLossPrice));
+                dataManager.cancelAllOrdersFor(instrumentSymbol);
+                placeStopLossOrder();
+                placeTakeProfitOrder();
             }
         }
     }
@@ -313,12 +315,12 @@ function handleTradeAutoSwitcher() {
     }
 }
 
-function placeOrder(side, type, price) {
+function placeOrder(side, type, price, qty) {
     let order = {
-        side: side,
         symbol: instrumentSymbol,
-        quantity: 1 * document.getElementById('ttQuantity').value,
+        side: side,
         type: type,
+        quantity: qty ? 1*qty : 1 * document.getElementById('ttQuantity').value,
         recvWindow: 30000
     }
     let orderPrice = currentPrice;
@@ -376,13 +378,48 @@ function pollOrders(symbol) {
             row.appendChild(uiUtils.createIconButtonColumn("fa-times", function () { dataManager.cancelOrder(order) }));
             document.getElementById("openOrdersDataGrid").appendChild(row);
 
-            //handle page refresh when position exists
             if (order.type === 'STOP_MARKET') {
                 currentStopOrder = order;
             }
         }
+        if (currentPosition.positionAmt && document.getElementById("tradeAutoSwitcher").checked) {
+            let quantity = Math.abs(currentPosition.positionAmt);
+            if (filteredOrders.length !== 2) {
+                dataManager.cancelAllOrdersFor(instrumentSymbol);
+                placeStopLossOrder();
+                placeTakeProfitOrder();
+            } else if (filteredOrders[0].origQty != quantity || filteredOrders[1].origQty != quantity ) {
+                dataManager.cancelAllOrdersFor(instrumentSymbol);
+                placeStopLossOrder(quantity);
+                placeTakeProfitOrder(quantity);
+            }
+        }
     });
 }
+
+async function placeStopLossOrder(quantity) {
+    if (currentPosition.positionAmt > 0) { //long position
+        let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
+        await placeOrder('SELL', 'STOP_MARKET', stopLossPrice, quantity);
+
+    }
+    if (currentPosition.positionAmt < 0) { //short position
+        let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
+        await placeOrder('BUY', 'STOP_MARKET', stopLossPrice);
+    }
+}
+
+async function placeTakeProfitOrder(quantity) {
+    if (currentPosition.positionAmt > 0) { //long position
+        let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
+        placeOrder('SELL', 'LIMIT', takeProfitPrice, quantity);
+    }
+    if (currentPosition.positionAmt < 0) { //short position
+        let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
+        placeOrder('BUY', 'LIMIT', takeProfitPrice);
+    }
+}
+
 
 function displayCurrentPosition() {
     document.getElementById("ttPositionsDataGrid").innerHTML = '';

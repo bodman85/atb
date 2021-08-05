@@ -110,8 +110,6 @@ function placeOrder(order, callback) {
     firePostRequestWithCallback(ORDER + '?' + queryString, callback);
 }
 
-
-
 function requestOrders(symbol, callback) {
     let queryString = `symbol=${symbol}&timeStamp=${Date.now()}`;
     queryString += sign(queryString);
