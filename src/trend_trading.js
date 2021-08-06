@@ -411,11 +411,11 @@ async function placeStopLossOrder(quantity) {
 
 async function placeTakeProfitOrder(quantity) {
     if (currentPosition.positionAmt > 0) { //long position
-        let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
+        let takeProfitPrice = addPcntDelta(currentPosition.entryPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
         placeOrder('SELL', 'LIMIT', takeProfitPrice, quantity);
     }
     if (currentPosition.positionAmt < 0) { //short position
-        let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
+        let takeProfitPrice = addPcntDelta(currentPosition.entryPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
         placeOrder('BUY', 'LIMIT', takeProfitPrice);
     }
 }
