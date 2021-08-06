@@ -14,10 +14,9 @@ const FORECAST_BUFFER_SIZE = 10;
 const AVG_PRICES_BUFFER_SIZE = 240;
 const FORECAST_DELTA_EDGE_VALUE = 0.1;
 
+const TAKE_PROFIT_PCNT = 0.5;
 const FOLLOW_TREND_TRIGGER_PCNT = 0.15;
-const TAKE_PROFIT_FOLLOW_TREND_PCNT = 0.75;
 const OSCILLATOR_TRIGGER_PCNT = 1;
-const TAKE_PROFIT_OSCILLATOR_PCNT = 0.5;
 const STOP_LOSS_PRICE_PCNT = 0.25;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
 const STOP_ORDER_TRIGGER_PRICE_PCNT = 0.1;
@@ -140,32 +139,24 @@ function autoTrade() {
         if (isTrendAsc()) {
             console.log(`ASCENDING trend detected at ${new Date().toLocaleString()}`);
             placeOrder('BUY', 'MARKET');
-            let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
-            placeOrder('SELL', 'LIMIT', takeProfitPrice);
-            let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
-            placeOrder('SELL', 'STOP_MARKET', stopLossPrice);
+            placeTakeProfitOrder();
+            placeStopLossOrder();
         } else if (isTrendDesc()) {
             console.log(`DESCENDING trend detected at ${new Date().toLocaleString()}`);
             placeOrder('SELL', 'MARKET');
-            let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
-            placeOrder('BUY', 'LIMIT', takeProfitPrice);
-            let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
-            placeOrder('BUY', 'STOP_MARKET', stopLossPrice);
+            placeTakeProfitOrder();
+            placeStopLossOrder();
         } else { // price is swinging in channel
             if (isMarketOverbought()) {
                 console.log(`Market is OVERBOUGHT at ${new Date().toLocaleString()}`);
                 placeOrder('SELL', 'MARKET');
-                let takeProfitPrice = addPcntDelta(currentPrice, -TAKE_PROFIT_OSCILLATOR_PCNT);
-                placeOrder('BUY', 'LIMIT', takeProfitPrice);
-                let stopLossPrice = addPcntDelta(currentPrice, STOP_LOSS_PRICE_PCNT);
-                placeOrder('BUY', 'STOP_MARKET', stopLossPrice);
+                placeTakeProfitOrder();
+                placeStopLossOrder();
             } else if (isMarketOversold()) {
                 console.log(`Market is OVERSOLD at ${new Date().toLocaleString()}`);
                 placeOrder('BUY', 'MARKET');
-                let takeProfitPrice = addPcntDelta(currentPrice, TAKE_PROFIT_OSCILLATOR_PCNT);
-                placeOrder('SELL', 'LIMIT', takeProfitPrice);
-                let stopLossPrice = addPcntDelta(currentPrice, -STOP_LOSS_PRICE_PCNT);
-                placeOrder('SELL', 'STOP_MARKET', stopLossPrice);
+                placeTakeProfitOrder();
+                placeStopLossOrder();
             }
         }
     } else {
@@ -327,6 +318,7 @@ function placeOrder(side, type, price, qty) {
     switch (type) {
         case 'MARKET':
             //opening trade should always be a MARKET trade
+            currentPosition.entryPrice = currentPrice;
             currentPosition.positionAmt = side === 'BUY' ? order.quantity : -order.quantity;
             console.log(`Placing ${type} ${side} order with price ${orderPrice}...`);
             break;
@@ -411,15 +403,14 @@ async function placeStopLossOrder(quantity) {
 
 async function placeTakeProfitOrder(quantity) {
     if (currentPosition.positionAmt > 0) { //long position
-        let takeProfitPrice = addPcntDelta(currentPosition.entryPrice, TAKE_PROFIT_FOLLOW_TREND_PCNT);
+        let takeProfitPrice = addPcntDelta(currentPosition.entryPrice, TAKE_PROFIT_PCNT);
         placeOrder('SELL', 'LIMIT', takeProfitPrice, quantity);
     }
     if (currentPosition.positionAmt < 0) { //short position
-        let takeProfitPrice = addPcntDelta(currentPosition.entryPrice, -TAKE_PROFIT_FOLLOW_TREND_PCNT);
+        let takeProfitPrice = addPcntDelta(currentPosition.entryPrice, -TAKE_PROFIT_PCNT);
         placeOrder('BUY', 'LIMIT', takeProfitPrice);
     }
 }
-
 
 function displayCurrentPosition() {
     document.getElementById("ttPositionsDataGrid").innerHTML = '';
