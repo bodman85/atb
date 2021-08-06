@@ -15,10 +15,12 @@ const AVG_PRICES_BUFFER_SIZE = 240;
 const FORECAST_DELTA_EDGE_VALUE = 0.1;
 
 const TAKE_PROFIT_PCNT = 0.5;
+const STOP_LOSS_PRICE_PCNT = 0.2;
+const LIMIT_ORDER_FEE_PCNT = 0.01;
+
 const FOLLOW_TREND_TRIGGER_PCNT = 0.15;
 const OSCILLATOR_TRIGGER_PCNT = 1;
-const STOP_LOSS_PRICE_PCNT = 0.25;
-const LIMIT_ORDER_FEE_PCNT = 0.01;
+const REPLACE_STOP_ORDER_TRIGGER_PCNT = 1.5;
 const STOP_ORDER_TRIGGER_PRICE_PCNT = 0.1;
 
 let FAIR_PRICE_DELTAS = new CircularBuffer(FORECAST_BUFFER_SIZE);
@@ -161,14 +163,14 @@ function autoTrade() {
         }
     } else {
         if (currentPosition.positionAmt > 0) { //long position
-            if (getPcntGrowth(currentStopOrder.stopPrice, currentPrice) > 1.6 * STOP_LOSS_PRICE_PCNT) {
+            if (getPcntGrowth(currentStopOrder.stopPrice, currentPrice) > REPLACE_STOP_ORDER_TRIGGER_PCNT * STOP_LOSS_PRICE_PCNT) {
                 dataManager.cancelAllOrdersFor(instrumentSymbol);
                 placeStopLossOrder();
                 placeTakeProfitOrder();
             }
         }
         if (currentPosition.positionAmt < 0) { //short position
-            if (getPcntGrowth(currentStopOrder.stopPrice, currentPrice) < -1.6 * STOP_LOSS_PRICE_PCNT) {
+            if (getPcntGrowth(currentStopOrder.stopPrice, currentPrice) < -REPLACE_STOP_ORDER_TRIGGER_PCNT * STOP_LOSS_PRICE_PCNT) {
                 dataManager.cancelAllOrdersFor(instrumentSymbol);
                 placeStopLossOrder();
                 placeTakeProfitOrder();
