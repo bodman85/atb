@@ -19,7 +19,8 @@ const ALL_SYMBOLS = "dapi/v1/exchangeInfo";
 const SYMBOL_PRICE = "dapi/v1/ticker/price";
 const CURRENT_PRICES = "dapi/v1/ticker/bookTicker";
 const ORDER = "dapi/v1/order";
-const ORDERS = 'dapi/v1/openOrders';
+const OPEN_ORDERS = 'dapi/v1/openOrders';
+const ALL_OPEN_ORDERS = 'dapi/v1/allOpenOrders';
 const POSITIONS = 'dapi/v1/positionRisk';
 const KLINES = 'dapi/v1/klines';
 
@@ -113,7 +114,7 @@ function placeOrder(order, callback) {
 function requestOrders(symbol, callback) {
     let queryString = `symbol=${symbol}&timeStamp=${Date.now()}`;
     queryString += sign(queryString);
-    fireGetRequestWithCallback(ORDERS + '?' + queryString, callback);
+    fireGetRequestWithCallback(OPEN_ORDERS + '?' + queryString, callback);
 }
 
 function cancelOrder(order, callback) {
@@ -123,11 +124,9 @@ function cancelOrder(order, callback) {
 }
 
 function cancelAllOrdersFor(symbol, callback) {
-    requestOrders(symbol, orders => {
-        for (let o of orders) {
-            cancelOrder(o, callback);
-        }
-    })
+    let queryString = `symbol=${symbol}&timeStamp=${Date.now()}`;
+    queryString += sign(queryString);
+    fireDeleteRequestWithCallback(ALL_OPEN_ORDERS + '?' + queryString, callback);
 }
 
 function requestPositions(callback) {
