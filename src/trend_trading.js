@@ -16,7 +16,9 @@ const FORECAST_DELTA_EDGE_VALUE = 0.1;
 
 const TAKE_PROFIT_PCNT = 0.5;
 const STOP_LOSS_PRICE_PCNT = 0.2;
+
 const LIMIT_ORDER_FEE_PCNT = 0.01;
+const MARKET_ORDER_FEE_PCNT = 0.05;
 
 const FOLLOW_TREND_TRIGGER_PCNT = 0.15;
 const OSCILLATOR_TRIGGER_PCNT = 1;
@@ -257,15 +259,13 @@ function hasAmount(position) {
 }
 
 function computePnlPcntFor(position) {
-    if (!hasAmount(position)) {
-        return 0;
-    } else {
-        if (position.positionAmt > 0) {
-            return (currentPrice - position.entryPrice) / position.entryPrice * 100 - 2 * LIMIT_ORDER_FEE_PCNT;
-        } else {
-            return (position.entryPrice - currentPrice) / position.entryPrice * 100 - 2 * LIMIT_ORDER_FEE_PCNT;
-        }
+    let pnl = 0;
+    if (position.positionAmt > 0) {
+        pnl =  (currentPrice - position.entryPrice) / position.entryPrice * 100 - 2 * MARKET_ORDER_FEE_PCNT;
+    } else if (position.positionAmt < 0) {
+        pnl =  (position.entryPrice - currentPrice) / position.entryPrice * 100 - 2 * MARKET_ORDER_FEE_PCNT;
     }
+    return pnl;
 }
 
 function computeFairPrice(data) {
