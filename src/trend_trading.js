@@ -250,7 +250,7 @@ function pollCurrentPosition() {
             currentPosition.symbol = position.symbol;
             currentPosition.positionAmt = position.positionAmt;
             currentPosition.entryPrice = position.entryPrice;
-            currentPosition.unRealizedProfit = position.unRealizedProfit / position.notionalValue * 100;
+            currentPosition.unRealizedProfit = position.unRealizedProfit / Math.abs(position.notionalValue) * 100;
         }
     });
 }
