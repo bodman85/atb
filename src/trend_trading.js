@@ -262,9 +262,9 @@ function hasAmount(position) {
 function computePnlPcntFor(position) {
     let pnl = 0;
     if (position.positionAmt > 0) {
-        pnl = Math.abs(position.positionAmt)*((currentPrice - position.entryPrice) / position.entryPrice * 100 - 2 * MARKET_ORDER_FEE_PCNT);
+        pnl = Math.abs(position.positionAmt) * (currentPrice - position.entryPrice - 2 * MARKET_ORDER_FEE_PCNT * currentPrice) / position.entryPrice * 100;
     } else if (position.positionAmt < 0) {
-        pnl = Math.abs(position.positionAmt) * ((position.entryPrice - currentPrice) / position.entryPrice * 100 - 2 * MARKET_ORDER_FEE_PCNT);
+        pnl = Math.abs(position.positionAmt) * (position.entryPrice - currentPrice - 2 * MARKET_ORDER_FEE_PCNT * currentPrice) / position.entryPrice * 100;
     }
     return pnl;
 }
