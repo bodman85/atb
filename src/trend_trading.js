@@ -150,19 +150,20 @@ function autoTrade() {
             placeOrder('SELL', 'MARKET');
             placeTakeProfitOrder();
             placeStopLossOrder();
-        } else { // price is swinging in channel
-            if (isMarketOverbought()) {
-                console.log(`Market is OVERBOUGHT at ${new Date().toLocaleString()}`);
-                placeOrder('SELL', 'MARKET');
-                placeTakeProfitOrder();
-                placeStopLossOrder();
-            } else if (isMarketOversold()) {
-                console.log(`Market is OVERSOLD at ${new Date().toLocaleString()}`);
-                placeOrder('BUY', 'MARKET');
-                placeTakeProfitOrder();
-                placeStopLossOrder();
-            }
         }
+        //else { // price is swinging in channel
+        //    if (isMarketOverbought()) {
+        //        console.log(`Market is OVERBOUGHT at ${new Date().toLocaleString()}`);
+        //        placeOrder('SELL', 'MARKET');
+        //        placeTakeProfitOrder();
+        //        placeStopLossOrder();
+        //    } else if (isMarketOversold()) {
+        //        console.log(`Market is OVERSOLD at ${new Date().toLocaleString()}`);
+        //        placeOrder('BUY', 'MARKET');
+        //        placeTakeProfitOrder();
+        //        placeStopLossOrder();
+        //    }
+        //}
     } else {
         if (currentPosition.positionAmt > 0) { //long position
             if (getPcntGrowth(currentStopOrder.stopPrice, currentPrice) > REPLACE_STOP_ORDER_TRIGGER_PCNT * STOP_LOSS_PRICE_PCNT) {
