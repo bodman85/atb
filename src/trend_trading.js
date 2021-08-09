@@ -250,7 +250,7 @@ function pollCurrentPosition() {
             currentPosition.symbol = position.symbol;
             currentPosition.positionAmt = position.positionAmt;
             currentPosition.entryPrice = position.entryPrice;
-            currentPosition.unRealizedProfit = position.unRealizedProfit / Math.abs(position.notionalValue) * 100;
+            currentPosition.unRealizedProfit = (position.unRealizedProfit - Math.abs(position.positionAmt) * MARKET_ORDER_FEE_PCNT * (1* position.entryPrice + currentPrice)) / Math.abs(position.notionalValue) * 100;
         }
     });
 }
@@ -259,15 +259,6 @@ function hasAmount(position) {
     return !dataManager.isEmpty(position) && ('positionAmt' in position) && position.positionAmt != 0;
 }
 
-function computePnlPcntFor(position) {
-    let pnl = 0;
-    if (position.positionAmt > 0) {
-        pnl = Math.abs(position.positionAmt) * (currentPrice - position.entryPrice - 2 * MARKET_ORDER_FEE_PCNT / 100 * currentPrice) / position.entryPrice * 100;
-    } else if (position.positionAmt < 0) {
-        pnl = Math.abs(position.positionAmt) * (position.entryPrice - currentPrice - 2 * MARKET_ORDER_FEE_PCNT / 100 * currentPrice) / position.entryPrice * 100;
-    }
-    return pnl;
-}
 
 function computeFairPrice(data) {
     let asks = data['a'];
