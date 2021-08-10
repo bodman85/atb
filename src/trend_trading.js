@@ -7,8 +7,8 @@ const instrumentSymbol = urlParams.get('instrument');
 
 const ONE_SECOND = 5000;
 const FIVE_SECONDS = 5000;
-const ONE_MINUTE = 60000; 
-const ONE_HOUR = 3600000; 
+const ONE_MINUTE = 60000;
+const ONE_HOUR = 3600000;
 
 const FORECAST_BUFFER_SIZE = 10;
 const AVG_PRICES_BUFFER_SIZE = 240;
@@ -20,7 +20,7 @@ const STOP_LOSS_PRICE_PCNT = 0.2;
 const LIMIT_ORDER_FEE_PCNT = 0.01;
 const MARKET_ORDER_FEE_PCNT = 0.05;
 
-const FOLLOW_TREND_TRIGGER_PCNT = 0.15;
+const FOLLOW_TREND_TRIGGER_PCNT = 0.1;
 const OSCILLATOR_TRIGGER_PCNT = 1;
 const REPLACE_STOP_ORDER_TRIGGER_PCNT = 1.5;
 const STOP_ORDER_TRIGGER_PRICE_PCNT = 0.1;
@@ -182,39 +182,57 @@ function autoTrade() {
 }
 
 function isTrendAsc() {
-    return movingAverageFast > 0 && movingAverageMid > 0 && movingAverageSlow > 0
-        && getPcntGrowth(movingAverageMid, movingAverageFast) >= FOLLOW_TREND_TRIGGER_PCNT
-        && getPcntGrowth(movingAverageSlow, movingAverageMid) >= FOLLOW_TREND_TRIGGER_PCNT
-        && trend_1m > 0 && trend_3m > 0 && trend_5m > 0 && trend_15m > 0 && trend_30m > 0
+    return movingAverageFast > 0 &&
+        movingAverageMid > 0 &&
+        movingAverageSlow > 0 &&
+        getPcntGrowth(movingAverageMid, movingAverageFast) >= FOLLOW_TREND_TRIGGER_PCNT &&
+        getPcntGrowth(movingAverageSlow, movingAverageMid) >= FOLLOW_TREND_TRIGGER_PCNT &&
+        trend_1m > 0 &&
+        trend_3m > 0 &&
+        trend_5m > 0 &&
+        trend_15m > 0 &&
+        trend_30m > 0;
 }
 
 function isTrendDesc() {
-    return movingAverageFast > 0 && movingAverageMid > 0 && movingAverageSlow > 0
-        && getPcntGrowth(movingAverageMid, movingAverageFast) <= -FOLLOW_TREND_TRIGGER_PCNT
-        && getPcntGrowth(movingAverageSlow, movingAverageMid) <= -FOLLOW_TREND_TRIGGER_PCNT
-        && trend_1m < 0 && trend_3m < 0 && trend_5m < 0 && trend_15m < 0 && trend_30m < 0
+    return movingAverageFast > 0 &&
+        movingAverageMid > 0 &&
+        movingAverageSlow > 0 &&
+        getPcntGrowth(movingAverageMid, movingAverageFast) <= -FOLLOW_TREND_TRIGGER_PCNT &&
+        getPcntGrowth(movingAverageSlow, movingAverageMid) <= -FOLLOW_TREND_TRIGGER_PCNT &&
+        trend_1m < 0 &&
+        trend_3m < 0 &&
+        trend_5m < 0 &&
+        trend_15m < 0 &&
+        trend_30m < 0;
 }
 
 function isMarketOverbought() {
-    return oscillatorMovingAverageFast > 0 && oscillatorMovingAverageSlow > 0 && oscillatorMaxFast > 0 && currentPrice > oscillatorMaxFast
-        && getPcntGrowth(oscillatorMovingAverageSlow, oscillatorMovingAverageFast) >= OSCILLATOR_TRIGGER_PCNT;
+    return oscillatorMovingAverageFast > 0 &&
+        oscillatorMovingAverageSlow > 0 &&
+        oscillatorMaxFast > 0 &&
+        currentPrice > oscillatorMaxFast &&
+        getPcntGrowth(oscillatorMovingAverageSlow, oscillatorMovingAverageFast) >= OSCILLATOR_TRIGGER_PCNT;
 }
 
 function isMarketOversold() {
-    return oscillatorMovingAverageFast > 0 && oscillatorMovingAverageSlow > 0 && oscillatorMinFast >0 && currentPrice < oscillatorMinFast
-        && getPcntGrowth(oscillatorMovingAverageSlow, oscillatorMovingAverageFast) <= -OSCILLATOR_TRIGGER_PCNT;
+    return oscillatorMovingAverageFast > 0 &&
+        oscillatorMovingAverageSlow > 0 &&
+        oscillatorMinFast > 0 &&
+        currentPrice < oscillatorMinFast &&
+        getPcntGrowth(oscillatorMovingAverageSlow, oscillatorMovingAverageFast) <= -OSCILLATOR_TRIGGER_PCNT;
 }
 
 function getPcntGrowth(oldValue, newValue) {
-    return ((newValue*1 - oldValue*1) / oldValue*1) * 100;
+    return ((newValue * 1 - oldValue * 1) / oldValue * 1) * 100;
 }
 
 function addPcntDelta(value, delta) {
-    return parseFloat(value*1 + delta / 100 * value).toFixed(2);
+    return parseFloat(value * 1 + delta / 100 * value).toFixed(2);
 }
 
 function computeAverage(first, second) {
-    return parseFloat((first*1 + second*1) / 2).toFixed(2);
+    return parseFloat((first * 1 + second * 1) / 2).toFixed(2);
 }
 
 function computeAveragePriceForLatestMinutes(latestMinutes) {
@@ -240,7 +258,7 @@ function pollCurrentPosition() {
             currentPosition.symbol = position.symbol;
             currentPosition.positionAmt = position.positionAmt;
             currentPosition.entryPrice = position.entryPrice;
-            currentPosition.unRealizedProfit = (position.unRealizedProfit - 2 * MARKET_ORDER_FEE_PCNT / 100 * position.notionalValue ) / Math.abs(position.notionalValue) * 100;
+            currentPosition.unRealizedProfit = (position.unRealizedProfit - 2 * MARKET_ORDER_FEE_PCNT / 100 * position.notionalValue) / Math.abs(position.notionalValue) * 100;
         }
     });
 }
@@ -295,7 +313,7 @@ function placeOrder(side, type, price, qty) {
         symbol: instrumentSymbol,
         side: side,
         type: type,
-        quantity: qty ? 1*qty : 1 * document.getElementById('ttQuantity').value,
+        quantity: qty ? 1 * qty : 1 * document.getElementById('ttQuantity').value,
         recvWindow: 30000
     }
     let orderPrice = currentPrice;
@@ -315,7 +333,7 @@ function placeOrder(side, type, price, qty) {
             break;
         case 'STOP':
             orderPrice = price;
-            let triggerPrice = (side === 'BUY' ? addPcntDelta(orderPrice, STOP_ORDER_TRIGGER_PRICE_PCNT) : addPcntDelta(orderPrice, -STOP_ORDER_TRIGGER_PRICE_PCNT));
+            var triggerPrice = (side === 'BUY' ? addPcntDelta(orderPrice, STOP_ORDER_TRIGGER_PRICE_PCNT) : addPcntDelta(orderPrice, -STOP_ORDER_TRIGGER_PRICE_PCNT));
             Object.assign(order, { price: price, stopPrice: triggerPrice, timeInForce: 'GTC' });
             break;
         case 'STOP_MARKET':
@@ -364,7 +382,7 @@ function pollOrders(symbol) {
                 dataManager.cancelAllOrdersFor(instrumentSymbol);
                 placeStopLossOrder();
                 placeTakeProfitOrder();
-            } else if (filteredOrders[0].origQty != quantity || filteredOrders[1].origQty != quantity ) {
+            } else if (filteredOrders[0].origQty != quantity || filteredOrders[1].origQty != quantity) {
                 dataManager.cancelAllOrdersFor(instrumentSymbol);
                 placeStopLossOrder(quantity);
                 placeTakeProfitOrder(quantity);
