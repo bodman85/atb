@@ -100,9 +100,9 @@ window.onload = function () {
         AVG_PRICES.enq(computeAverage(kline.k['l'], kline.k['h']));
         //compute moving averages
         oscillatorSlidingAverageSlow = computeAveragePriceForLatestMinutes(30);
-        movingAverageFast = computeAveragePriceForLatestMinutes(60);
-        movingAverageMid = computeAveragePriceForLatestMinutes(120);
-        movingAverageSlow = computeAveragePriceForLatestMinutes(240);
+        movingAverageFast = computeAveragePriceForLatestMinutes(15);
+        movingAverageMid = computeAveragePriceForLatestMinutes(30);
+        movingAverageSlow = computeAveragePriceForLatestMinutes(60);
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '1m', kline => {
