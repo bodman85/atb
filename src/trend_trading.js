@@ -14,13 +14,13 @@ const FORECAST_BUFFER_SIZE = 10;
 const AVG_PRICES_BUFFER_SIZE = 240;
 const FORECAST_DELTA_EDGE_VALUE = 0.1;
 
-const TAKE_PROFIT_PCNT = 0.5;
-const STOP_LOSS_PRICE_PCNT = 0.2;
+const TAKE_PROFIT_PCNT = 0.25;
+const STOP_LOSS_PRICE_PCNT = 0.25;
 
 const LIMIT_ORDER_FEE_PCNT = 0.01;
 const MARKET_ORDER_FEE_PCNT = 0.05;
 
-const FOLLOW_TREND_TRIGGER_PCNT = 0.1;
+const FOLLOW_TREND_TRIGGER_PCNT = 0.15;
 const OSCILLATOR_TRIGGER_PCNT = 1;
 const REPLACE_STOP_ORDER_TRIGGER_PCNT = 1.5;
 const STOP_ORDER_TRIGGER_PRICE_PCNT = 0.1;
@@ -99,9 +99,9 @@ window.onload = function () {
         //enqueue new or update existing value in CirculrBuffer
         AVG_PRICES.enq(computeAverage(kline.k['l'], kline.k['h']));
         //compute moving averages
-        movingAverageFast = computeAveragePriceForLatestMinutes(15);
-        movingAverageMid = computeAveragePriceForLatestMinutes(30);
-        movingAverageSlow = computeAveragePriceForLatestMinutes(60);
+        movingAverageFast = computeAveragePriceForLatestMinutes(60);
+        movingAverageMid = computeAveragePriceForLatestMinutes(120);
+        movingAverageSlow = computeAveragePriceForLatestMinutes(240);
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '1m', kline => {
@@ -246,7 +246,7 @@ function computeAveragePriceForLatestMinutes(latestMinutes) {
 function pollCurrentPosition() {
     dataManager.requestPositions(positions => {
         let targetPositions = positions.filter(p => parseFloat(p.unRealizedProfit) !== 0 && instrumentSymbol === p.symbol);
-        if (targetPositions.length == 0) {
+        if (targetPositions.length === 0) {
             if (currentPosition.unRealizedProfit) {
                 totalPnlPcnt += parseFloat(currentPosition.unRealizedProfit);
             }

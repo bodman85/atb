@@ -201,7 +201,7 @@ function pollUserDataStream(callback) {
 }
 
 function refreshListenKey() {
-    firePostRequestWithCallback(LISTEN_KEY);
+    firePutRequestWithCallback(LISTEN_KEY);
 }
 
 function sign(queryString) {
