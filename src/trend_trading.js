@@ -11,16 +11,16 @@ const ONE_MINUTE = 60000;
 const ONE_HOUR = 3600000;
 
 const FORECAST_BUFFER_SIZE = 10;
-const AVG_PRICES_BUFFER_SIZE = 240;
+const AVG_PRICES_BUFFER_SIZE = 720;
 const FORECAST_DELTA_EDGE_VALUE = 0.1;
 
-const TAKE_PROFIT_PCNT = 0.25;
-const STOP_LOSS_PRICE_PCNT = 0.25;
+const TAKE_PROFIT_PCNT = 10;
+const STOP_LOSS_PRICE_PCNT = 5;
 
 const LIMIT_ORDER_FEE_PCNT = 0.01;
 const MARKET_ORDER_FEE_PCNT = 0.05;
 
-const FOLLOW_TREND_TRIGGER_PCNT = 0.15;
+const FOLLOW_TREND_TRIGGER_PCNT = 0.25;
 const OSCILLATOR_TRIGGER_PCNT = 1;
 const REPLACE_STOP_ORDER_TRIGGER_PCNT = 1.5;
 const STOP_ORDER_TRIGGER_PRICE_PCNT = 0.1;
@@ -99,9 +99,9 @@ window.onload = function () {
         //enqueue new or update existing value in CirculrBuffer
         AVG_PRICES.enq(computeAverage(kline.k['l'], kline.k['h']));
         //compute moving averages
-        movingAverageFast = computeAveragePriceForLatestMinutes(60);
-        movingAverageMid = computeAveragePriceForLatestMinutes(120);
-        movingAverageSlow = computeAveragePriceForLatestMinutes(240);
+        movingAverageFast = computeAveragePriceForLatestMinutes(240);
+        movingAverageMid = computeAveragePriceForLatestMinutes(580);
+        movingAverageSlow = computeAveragePriceForLatestMinutes(720);
     });
 
     dataManager.pollKlinesFor(instrumentSymbol, '1m', kline => {
@@ -252,7 +252,9 @@ function pollCurrentPosition() {
             }
             currentPosition = {};
             //console.log(`Cancelling all pending limit orders...`);
-            dataManager.cancelAllOrdersFor(instrumentSymbol);
+            if (document.getElementById("tradeAutoSwitcher").checked) {
+                dataManager.cancelAllOrdersFor(instrumentSymbol);
+            }
         } else {
             let position = targetPositions[0];
             currentPosition.symbol = position.symbol;
