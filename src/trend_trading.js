@@ -132,7 +132,7 @@ window.onload = function () {
 }
 
 function initAvgPrices() {
-    dataManager.requestKlines(instrumentSymbol, '1m', 240, klines => {
+    dataManager.requestKlines(instrumentSymbol, '1m', AVG_PRICES_BUFFER_SIZE, klines => {
         klines.forEach(kline => AVG_PRICES.enq(parseFloat(computeAverage(kline[2], kline[3])).toFixed(2)));
     });
 }
